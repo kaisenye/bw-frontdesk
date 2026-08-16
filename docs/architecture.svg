@@ -1,0 +1,65 @@
+<svg width="680" height="620" viewBox="0 0 680 620" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>AI Front Desk request flow</title>
+<desc>A parent question travels from the chat page to a Next.js API route, which sends the operator-managed knowledge base to the model, validates the returned citation against real entries, and then renders either a cited answer, an escalation to staff, or a logged knowledge gap.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+<style>
+.t { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 14px; font-weight: 500; }
+.ts { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 12px; font-weight: 400; }
+.lg { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 12px; font-weight: 400; fill: #5F5E5A; }
+</style>
+</defs>
+
+<rect x="0" y="0" width="680" height="620" fill="#FFFFFF"/>
+
+<rect x="40" y="40" width="180" height="56" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text class="t" x="130" y="62" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A">Parent chat</text>
+<text class="ts" x="130" y="80" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A">app/page.tsx</text>
+
+<rect x="460" y="40" width="180" height="56" rx="4" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t" x="550" y="62" text-anchor="middle" dominant-baseline="central" fill="#085041">Knowledge base</text>
+<text class="ts" x="550" y="80" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">operator source of truth</text>
+
+<line x1="230" y1="68" x2="450" y2="68" stroke="#888780" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<rect x="250" y="150" width="180" height="56" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t" x="340" y="172" text-anchor="middle" dominant-baseline="central" fill="#3C3489">API route</text>
+<text class="ts" x="340" y="190" text-anchor="middle" dominant-baseline="central" fill="#534AB7">key stays server-side</text>
+
+<path d="M130 106 L130 178 L240 178" fill="none" stroke="#888780" stroke-width="0.5" marker-end="url(#arrow)"/>
+<path d="M550 106 L550 178 L440 178" fill="none" stroke="#888780" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<rect x="250" y="250" width="180" height="56" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t" x="340" y="272" text-anchor="middle" dominant-baseline="central" fill="#3C3489">Model</text>
+<text class="ts" x="340" y="290" text-anchor="middle" dominant-baseline="central" fill="#534AB7">returns answer + id</text>
+<line x1="340" y1="216" x2="340" y2="240" stroke="#888780" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<rect x="250" y="350" width="180" height="56" rx="4" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text class="t" x="340" y="372" text-anchor="middle" dominant-baseline="central" fill="#633806">Trust gate</text>
+<text class="ts" x="340" y="390" text-anchor="middle" dominant-baseline="central" fill="#854F0B">does the id resolve?</text>
+<line x1="340" y1="316" x2="340" y2="340" stroke="#888780" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<rect x="40" y="470" width="180" height="56" rx="4" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t" x="130" y="492" text-anchor="middle" dominant-baseline="central" fill="#085041">Cited answer</text>
+<text class="ts" x="130" y="510" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">tap to read policy</text>
+
+<rect x="250" y="470" width="180" height="56" rx="4" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text class="t" x="340" y="492" text-anchor="middle" dominant-baseline="central" fill="#633806">Escalated</text>
+<text class="ts" x="340" y="510" text-anchor="middle" dominant-baseline="central" fill="#854F0B">handed to staff</text>
+
+<rect x="460" y="470" width="180" height="56" rx="4" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+<text class="t" x="550" y="492" text-anchor="middle" dominant-baseline="central" fill="#712B13">Logged as gap</text>
+<text class="ts" x="550" y="510" text-anchor="middle" dominant-baseline="central" fill="#993C1D">operator answers once</text>
+
+<path d="M300 416 L300 440 L130 440 L130 460" fill="none" stroke="#1D9E75" stroke-width="0.5" marker-end="url(#arrow)"/>
+<path d="M340 416 L340 460" fill="none" stroke="#BA7517" stroke-width="0.5" marker-end="url(#arrow)"/>
+<path d="M380 416 L380 440 L550 440 L550 460" fill="none" stroke="#D85A30" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<path d="M630 498 L660 498 L660 68 L650 68" fill="none" stroke="#D85A30" stroke-width="0.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+
+<text class="lg" x="40" y="580" dominant-baseline="central">Teal: grounded and cited</text>
+<text class="lg" x="250" y="580" dominant-baseline="central">Amber: routed to a human</text>
+<text class="lg" x="460" y="580" dominant-baseline="central">Coral: feeds back as new knowledge</text>
+</svg>
