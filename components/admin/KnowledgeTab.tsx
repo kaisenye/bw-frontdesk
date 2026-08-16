@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { deleteEntry, newId, saveEntry } from "@/lib/store";
 import type { KnowledgeCategory, KnowledgeEntry } from "@/lib/types";
 import { EntryEditor, type EntryDraft } from "./EntryEditor";
+import { Modal } from "./Modal";
 import { CATEGORIES, CATEGORY_LABEL, CategoryBadge, OperatorBadge, relativeTime } from "./shared";
 
 interface KnowledgeTabProps {
@@ -12,13 +13,19 @@ interface KnowledgeTabProps {
 
 type CategoryFilter = KnowledgeCategory | "all";
 
+/**
+ * One editor is open, or none. Modelling this as a single value (rather than a
+ * "creating" flag next to an "editingId") makes the two states mutually
+ * exclusive by construction, so no combination of clicks can open both.
+ */
+type EditorState = { mode: "new" } | { mode: "edit"; entry: KnowledgeEntry } | null;
+
 const NEW_DRAFT: EntryDraft = { title: "", category: "policies", body: "" };
 
 export function KnowledgeTab({ entries }: KnowledgeTabProps) {
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [editorState, setEditorState] = useState<EditorState>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
 
@@ -43,9 +50,12 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
     }, 2600);
   }
 
+  // Stable identity: Modal takes onClose as an effect dependency.
+  const closeEditor = useCallback(() => setEditorState(null), []);
+
   function handleSaveExisting(entry: KnowledgeEntry, draft: EntryDraft) {
     saveEntry({ ...entry, ...draft });
-    setEditingId(null);
+    closeEditor();
     flashSaved(entry.id);
   }
 
@@ -58,7 +68,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
       updatedAt: new Date().toISOString(),
     };
     saveEntry(entry);
-    setCreating(false);
+    closeEditor();
     flashSaved(entry.id);
   }
 
@@ -68,7 +78,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
   }
 
   const rowAction =
-    "inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color,border-color] duration-[140ms] [transition-timing-function:var(--ease)]";
+    "inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color,border-color] duration-[140ms] [transition-timing-function:var(--ease)] sm:min-h-0 sm:h-7";
 
   return (
     <div className="flex flex-col gap-4">
@@ -96,16 +106,13 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search titles and answers"
-            className="min-h-[44px] w-full rounded-[var(--radius)] border border-line bg-surface pr-2.5 pl-8 text-[13px] text-ink outline-none transition-[border-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-line-strong focus:border-[var(--border-focus)]"
+            className="min-h-[44px] w-full rounded-[var(--radius)] border border-line bg-surface pr-2.5 pl-8 text-[13px] text-ink outline-none transition-[border-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-line-strong focus:border-[var(--border-focus)] sm:h-8 sm:min-h-0"
           />
         </div>
         <button
           type="button"
-          onClick={() => {
-            setCreating(true);
-            setEditingId(null);
-          }}
-          className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover"
+          onClick={() => setEditorState({ mode: "new" })}
+          className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover sm:h-8 sm:min-h-0"
         >
           <svg
             viewBox="0 0 20 20"
@@ -149,19 +156,49 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
         })}
       </div>
 
-      {creating ? (
-        <section className="rounded-[var(--radius-lg)] border border-accent-border bg-surface p-4">
-          <h2 className="mb-3.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-ink">
-            New knowledge entry
-          </h2>
+      {/* The editor lives in a modal, so typing never pushes the rows around.
+          It mounts fresh on open, which keeps a second edit from showing the
+          first entry's draft. */}
+      <Modal
+        open={editorState?.mode === "new"}
+        title="New knowledge entry"
+        description="Write it once and the front desk can use it from here on."
+        onClose={closeEditor}
+      >
+        {editorState?.mode === "new" ? (
           <EntryEditor
             initial={NEW_DRAFT}
             submitLabel="Save entry"
             onSave={handleCreate}
-            onCancel={() => setCreating(false)}
+            onCancel={closeEditor}
           />
-        </section>
-      ) : null}
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={editorState?.mode === "edit"}
+        title="Edit entry"
+        description={
+          editorState?.mode === "edit" ? `Updating “${editorState.entry.title}”` : undefined
+        }
+        onClose={closeEditor}
+      >
+        {editorState?.mode === "edit" ? (
+          <EntryEditor
+            /* The modal stays mounted between edits, so without a key the
+             * editor keeps the previous entry's draft in its own state. */
+            key={editorState.entry.id}
+            initial={{
+              title: editorState.entry.title,
+              category: editorState.entry.category,
+              body: editorState.entry.body,
+            }}
+            submitLabel="Save entry"
+            onSave={(draft) => handleSaveExisting(editorState.entry, draft)}
+            onCancel={closeEditor}
+          />
+        ) : null}
+      </Modal>
 
       {visible.length === 0 ? (
         <p className="rounded-[var(--radius-lg)] border border-dashed border-line-strong bg-surface px-4 py-12 text-center text-[13px] text-ink-muted">
@@ -172,7 +209,6 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
            stack of cards. */
         <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface">
           {visible.map((entry) => {
-            const isEditing = editingId === entry.id;
             const isConfirming = confirmingDeleteId === entry.id;
             const justSaved = savedId === entry.id;
 
@@ -180,26 +216,9 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
               <li
                 key={entry.id}
                 className={`group px-4 py-3 transition-colors duration-[140ms] [transition-timing-function:var(--ease)] ${
-                  isEditing ? "bg-surface-sunken" : justSaved ? "bg-accent-quiet" : "hover:bg-surface-hover"
+                  justSaved ? "bg-accent-quiet" : "hover:bg-surface-hover"
                 }`}
               >
-                {isEditing ? (
-                  <>
-                    <h3 className="mb-3.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-ink">
-                      Editing “{entry.title}”
-                    </h3>
-                    <EntryEditor
-                      initial={{
-                        title: entry.title,
-                        category: entry.category,
-                        body: entry.body,
-                      }}
-                      submitLabel="Save entry"
-                      onSave={(draft) => handleSaveExisting(entry, draft)}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  </>
-                ) : (
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       {/* Tight grouping inside the record: title, tags, meta. */}
@@ -248,8 +267,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
                           <button
                             type="button"
                             onClick={() => {
-                              setEditingId(entry.id);
-                              setCreating(false);
+                              setEditorState({ mode: "edit", entry });
                               setConfirmingDeleteId(null);
                             }}
                             className={`${rowAction} text-ink-secondary hover:bg-surface-sunken hover:text-ink`}
@@ -267,7 +285,6 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
                       )}
                     </div>
                   </div>
-                )}
               </li>
             );
           })}
@@ -293,7 +310,7 @@ function FilterTab({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] ${
+      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] sm:h-7 sm:min-h-0 ${
         active
           ? "bg-surface-sunken text-ink"
           : "text-ink-muted hover:bg-surface-hover hover:text-ink-secondary"

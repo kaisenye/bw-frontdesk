@@ -91,7 +91,7 @@ export default function AdminPage() {
 
             <Link
               href="/"
-              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius)] border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink"
+              className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius)] border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink sm:h-8 sm:min-h-0"
             >
               <svg
                 viewBox="0 0 20 20"
@@ -167,14 +167,14 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="inline-flex min-h-[44px] items-center rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2.5 text-[12px] font-medium text-ink transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover"
+                className="inline-flex min-h-[44px] cursor-pointer items-center rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2.5 text-[12px] font-medium text-ink transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover sm:h-7 sm:min-h-0"
               >
                 Yes, reset
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingReset(false)}
-                className="inline-flex min-h-[44px] items-center rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-[140ms] [transition-timing-function:var(--ease)] hover:text-ink"
+                className="inline-flex min-h-[44px] cursor-pointer items-center rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink sm:h-7 sm:min-h-0"
               >
                 Cancel
               </button>
@@ -183,7 +183,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setConfirmingReset(true)}
-              className="inline-flex min-h-[44px] items-center rounded-[var(--radius-sm)] px-2.5 text-[12px] text-ink-muted transition-colors duration-[140ms] [transition-timing-function:var(--ease)] hover:text-ink-secondary"
+              className="inline-flex min-h-[44px] cursor-pointer items-center rounded-[var(--radius-sm)] px-2.5 text-[12px] text-ink-muted transition-colors duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink-secondary sm:h-7 sm:min-h-0"
             >
               Reset demo data
             </button>
@@ -215,7 +215,7 @@ function TabButton({
       aria-selected={active}
       aria-controls={controls}
       onClick={onClick}
-      className={`inline-flex min-h-[44px] items-center gap-1.5 border-b-2 px-2.5 text-[13px] font-medium transition-[color,border-color] duration-[140ms] [transition-timing-function:var(--ease)] ${
+      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 border-b-2 px-2.5 text-[13px] font-medium transition-[color,border-color] duration-[140ms] [transition-timing-function:var(--ease)] sm:h-9 sm:min-h-0 ${
         active
           ? "border-accent text-ink"
           : "border-transparent text-ink-muted hover:border-line-strong hover:text-ink-secondary"

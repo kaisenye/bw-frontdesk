@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { newId, resolveLogItem, saveEntry } from "@/lib/store";
 import type { KnowledgeEntry, QuestionLogItem } from "@/lib/types";
 import { EntryEditor, type EntryDraft } from "./EntryEditor";
+import { Modal } from "./Modal";
 import { CategoryBadge, StatusBadge, relativeTime } from "./shared";
 
 interface InboxTabProps {
@@ -124,6 +125,9 @@ export function InboxTab({ log, entries }: InboxTabProps) {
     setMobileView("list");
   }
 
+  // Stable identity: Modal takes onClose as an effect dependency.
+  const stopComposing = useCallback(() => setComposingId(null), []);
+
   /** The improvement loop: write the missing entry, then close the gap it came from. */
   function handleAnswerGap(item: QuestionLogItem, draft: EntryDraft) {
     const entry: KnowledgeEntry = {
@@ -220,7 +224,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
                 celebrating={justResolvedId === selected.id}
                 reviewed={reviewedIds.includes(selected.id)}
                 onStartComposing={() => setComposingId(selected.id)}
-                onCancelComposing={() => setComposingId(null)}
+                onCancelComposing={stopComposing}
                 onSaveAnswer={(draft) => handleAnswerGap(selected, draft)}
                 onMarkReviewed={() => setReviewedIds((prev) => [...prev, selected.id])}
                 onBack={() => setMobileView("list")}
@@ -337,7 +341,7 @@ function DetailPane({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] px-1.5 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink md:hidden"
+          className="inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] px-1.5 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink sm:h-8 sm:min-h-0 md:hidden"
         >
           <svg
             viewBox="0 0 20 20"
@@ -354,7 +358,7 @@ function DetailPane({
           All questions
         </button>
 
-        <div className="flex min-h-[44px] flex-1 flex-wrap items-center justify-end gap-2 md:justify-between">
+        <div className="flex min-h-[44px] flex-1 flex-wrap items-center justify-end gap-2 sm:min-h-[36px] md:justify-between">
           <StatusBadge status={item.status} />
           <span className="text-[12px] text-ink-muted tabular-nums">
             Asked {relativeTime(item.askedAt)}
@@ -416,7 +420,7 @@ function DetailPane({
           </p>
         ) : null}
 
-        {item.status === "gap" && !composing ? (
+        {item.status === "gap" ? (
           <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-gap-border bg-gap-quiet px-3 py-2.5">
             <p className="flex-1 text-[12px] text-gap-text">
               <span className="font-medium">Nothing in the knowledge base covers this.</span>{" "}
@@ -425,31 +429,43 @@ function DetailPane({
             <button
               type="button"
               onClick={onStartComposing}
-              className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover"
+              className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover sm:h-8 sm:min-h-0"
             >
               Answer this
             </button>
           </div>
         ) : null}
 
-        {item.status === "gap" && composing ? (
-          <div className="rounded-[var(--radius)] border border-accent-border bg-surface p-3.5">
-            <h3 className="mb-3 font-display text-[13px] font-semibold tracking-[-0.01em] text-ink">
-              Teach the front desk this answer
-            </h3>
-            <EntryEditor
-              initial={{
-                title: suggestTitle(item.question),
-                category: "policies",
-                body: "",
-              }}
-              submitLabel="Add to knowledge base"
-              bodyPlaceholder="Answer the parent's question here, the way you'd say it in person."
-              onSave={onSaveAnswer}
-              onCancel={onCancelComposing}
-            />
-          </div>
-        ) : null}
+        {/* The composer is a modal so the confirmation below can land in the
+            pane behind it once the answer is saved. */}
+        <Modal
+          open={item.status === "gap" && composing}
+          title="Teach the front desk this answer"
+          description="Write it once and the front desk takes it from here."
+          onClose={onCancelComposing}
+        >
+          {item.status === "gap" && composing ? (
+            <div className="flex flex-col gap-3.5">
+              <section className="rounded-[var(--radius)] border border-line bg-surface-sunken px-3 py-2.5">
+                <h3 className="text-[12px] font-medium text-ink-muted">A parent asked</h3>
+                <p className="mt-1 text-[13px] leading-snug font-medium text-ink">
+                  {item.question}
+                </p>
+              </section>
+              <EntryEditor
+                initial={{
+                  title: suggestTitle(item.question),
+                  category: "policies",
+                  body: "",
+                }}
+                submitLabel="Add to knowledge base"
+                bodyPlaceholder="Answer the parent's question here, the way you'd say it in person."
+                onSave={onSaveAnswer}
+                onCancel={onCancelComposing}
+              />
+            </div>
+          ) : null}
+        </Modal>
 
         {item.status === "escalated" ? (
           <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-warn-border bg-warn-quiet px-3 py-2.5">
@@ -480,7 +496,7 @@ function DetailPane({
               <button
                 type="button"
                 onClick={onMarkReviewed}
-                className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] border border-warn-border bg-surface px-2.5 text-[12px] font-medium text-warn-text transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-warn-quiet"
+                className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] border border-warn-border bg-surface px-2.5 text-[12px] font-medium text-warn-text transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-warn-quiet sm:h-7 sm:min-h-0"
               >
                 Mark reviewed
               </button>
@@ -577,7 +593,7 @@ function FilterTab({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] ${
+      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] sm:h-7 sm:min-h-0 ${
         active
           ? "bg-surface-sunken text-ink"
           : "text-ink-muted hover:bg-surface-hover hover:text-ink-secondary"

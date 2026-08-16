@@ -49,7 +49,11 @@ export function EntryEditor({
 
   const labelClass = "block text-[12px] font-medium text-ink-secondary";
   const controlClass =
-    "w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)]";
+    "w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)] sm:py-1";
+  /* Thumb-sized on a phone, Linear-dense on a laptop. */
+  const singleLine = "min-h-[44px] sm:min-h-0 sm:h-8";
+  const actionButton =
+    "inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] px-3.5 text-[13px] font-medium transition-[background-color,color,opacity] duration-[140ms] [transition-timing-function:var(--ease)] sm:min-h-0 sm:h-8";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
@@ -64,7 +68,7 @@ export function EntryEditor({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Birthday treats in the classroom"
-            className={`${controlClass} min-h-[44px]`}
+            className={`${controlClass} ${singleLine}`}
             autoComplete="off"
           />
         </div>
@@ -77,7 +81,7 @@ export function EntryEditor({
             id={categoryId}
             value={category}
             onChange={(e) => setCategory(e.target.value as KnowledgeCategory)}
-            className={`${controlClass} min-h-[44px] sm:w-44`}
+            className={`${controlClass} ${singleLine} sm:w-44`}
           >
             {CATEGORIES.map((value) => (
               <option key={value} value={value}>
@@ -98,7 +102,7 @@ export function EntryEditor({
           onChange={(e) => setBody(e.target.value)}
           rows={8}
           placeholder={bodyPlaceholder ?? "Write it the way you'd explain it to a parent."}
-          className={`${controlClass} resize-y leading-relaxed`}
+          className={`${controlClass} resize-y leading-relaxed sm:py-2`}
         />
         <p className="text-[12px] text-ink-muted">
           Plain language works best. The front desk quotes this straight to parents.
@@ -109,14 +113,14 @@ export function EntryEditor({
         <button
           type="submit"
           disabled={!canSave}
-          className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color,opacity] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-ink-muted"
+          className={`${actionButton} bg-accent text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-ink-muted`}
         >
           {submitLabel}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] border border-line-strong bg-surface px-3.5 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink"
+          className={`${actionButton} border border-line-strong bg-surface text-ink-secondary hover:bg-surface-hover hover:text-ink`}
         >
           Cancel
         </button>
