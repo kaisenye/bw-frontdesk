@@ -47,14 +47,13 @@ export function EntryEditor({
     onSave({ title: title.trim(), category, body: body.trim() });
   }
 
-  const labelClass =
-    "block text-[11px] font-semibold tracking-[0.08em] text-stone-500 uppercase";
+  const labelClass = "block text-[12px] font-medium text-ink-secondary";
   const controlClass =
-    "w-full rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-[15px] text-stone-900 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25";
+    "w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)]";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+      <div className="grid gap-3.5 sm:grid-cols-[1fr_auto]">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={titleId} className={labelClass}>
             Title
@@ -64,7 +63,7 @@ export function EntryEditor({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Birthday Treats in the Classroom"
+            placeholder="e.g. Birthday treats in the classroom"
             className={`${controlClass} min-h-[44px]`}
             autoComplete="off"
           />
@@ -97,32 +96,32 @@ export function EntryEditor({
           id={bodyId}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          rows={10}
-          placeholder={bodyPlaceholder ?? "Write it the way you would explain it to a parent."}
-          className={`${controlClass} resize-y font-mono text-[13.5px] leading-relaxed`}
+          rows={8}
+          placeholder={bodyPlaceholder ?? "Write it the way you'd explain it to a parent."}
+          className={`${controlClass} resize-y leading-relaxed`}
         />
-        <p className="text-xs text-stone-500">
-          Plain language works best — the front desk quotes this to parents.
+        <p className="text-[12px] text-ink-muted">
+          Plain language works best. The front desk quotes this straight to parents.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="submit"
           disabled={!canSave}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+          className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color,opacity] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-ink-muted"
         >
           {submitLabel}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-400/40 focus-visible:outline-none"
+          className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] border border-line-strong bg-surface px-3.5 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink"
         >
           Cancel
         </button>
         {!canSave ? (
-          <span className="text-xs text-stone-500">
+          <span className="text-[12px] text-ink-muted">
             Add a title and an answer to save.
           </span>
         ) : null}

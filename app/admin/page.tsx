@@ -43,8 +43,8 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("knowledge");
   const [confirmingReset, setConfirmingReset] = useState(false);
 
-  // Seeding only touches the external store, so it triggers no render cascade —
-  // the resulting write is picked up by the subscriptions below.
+  // Seeding only touches the external store, so it triggers no render cascade.
+  // The resulting write is picked up by the subscriptions below.
   useEffect(() => {
     ensureSeeded();
   }, []);
@@ -76,48 +76,41 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-full flex-1 bg-stone-50 font-sans text-stone-900">
-      <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="min-h-full flex-1 bg-bg font-sans text-ink">
+      <header className="border-b border-line bg-surface">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-5 pb-4">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-emerald-700 uppercase">
-                Control Center
-              </p>
-              <h1 className="mt-1 text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl">
+              <h1 className="font-display text-[17px] font-semibold tracking-[-0.01em] text-ink">
                 {CENTER.name}
               </h1>
-              <p className="mt-1 text-sm text-stone-500">
-                Manage what the front desk knows, and see what it could not answer.
+              <p className="mt-0.5 text-[13px] text-ink-secondary">
+                What the front desk knows, and what stumped it.
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Link
-                href="/"
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-400/40 focus-visible:outline-none"
+            <Link
+              href="/"
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius)] border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink"
+            >
+              <svg
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12.5 5 7.5 10l5 5" />
-                </svg>
-                Parent view
-              </Link>
-            </div>
+                <path d="M12.5 5 7.5 10l5 5" />
+              </svg>
+              Parent view
+            </Link>
           </div>
 
-          <nav
-            className="flex w-full gap-1.5 rounded-xl border border-stone-200 bg-stone-100 p-1.5 sm:w-auto sm:self-start"
-            aria-label="Control center sections"
-          >
+          {/* Underlined tabs sit on the header's bottom border, Linear style. */}
+          <nav className="-mb-px flex gap-1" aria-label="Control center sections">
             <TabButton
               active={tab === "knowledge"}
               onClick={() => setTab("knowledge")}
@@ -136,9 +129,7 @@ export default function AdminPage() {
               Inbox
               {needsAttention > 0 ? (
                 <span
-                  className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums ${
-                    tab === "inbox" ? "bg-white/20 text-white" : "bg-rose-100 text-rose-800"
-                  }`}
+                  className="tabular-nums text-gap-text"
                   title={`${needsAttention} need attention`}
                 >
                   {needsAttention}
@@ -151,9 +142,9 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         {!ready ? (
-          <p className="py-16 text-center text-sm text-stone-500">Loading your center…</p>
+          <p className="py-16 text-center text-[13px] text-ink-muted">Loading your center…</p>
         ) : tab === "knowledge" ? (
           <section id="panel-knowledge" role="tabpanel" aria-labelledby="tab-knowledge">
             <KnowledgeTab entries={entries} />
@@ -166,24 +157,24 @@ export default function AdminPage() {
       </main>
 
       <footer className="mx-auto max-w-5xl px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-200 pt-5">
-          <p className="text-xs text-stone-500">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <p className="text-[12px] text-ink-muted">
             {CENTER.director} · {CENTER.phone}
           </p>
           {confirmingReset ? (
             <span className="flex items-center gap-2">
-              <span className="text-xs text-stone-600">Restore the demo data?</span>
+              <span className="text-[12px] text-ink-secondary">Put the demo data back?</span>
               <button
                 type="button"
                 onClick={handleReset}
-                className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-400 bg-white px-3 text-xs font-semibold text-stone-800 transition hover:bg-stone-100"
+                className="inline-flex min-h-[44px] items-center rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2.5 text-[12px] font-medium text-ink transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover"
               >
                 Yes, reset
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingReset(false)}
-                className="inline-flex min-h-[44px] items-center rounded-lg px-3 text-xs font-semibold text-stone-500 transition hover:text-stone-800"
+                className="inline-flex min-h-[44px] items-center rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium text-ink-muted transition-colors duration-[140ms] [transition-timing-function:var(--ease)] hover:text-ink"
               >
                 Cancel
               </button>
@@ -192,7 +183,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setConfirmingReset(true)}
-              className="inline-flex min-h-[44px] items-center rounded-lg px-3 text-xs font-medium text-stone-500 underline decoration-stone-300 underline-offset-4 transition hover:text-stone-800"
+              className="inline-flex min-h-[44px] items-center rounded-[var(--radius-sm)] px-2.5 text-[12px] text-ink-muted transition-colors duration-[140ms] [transition-timing-function:var(--ease)] hover:text-ink-secondary"
             >
               Reset demo data
             </button>
@@ -224,10 +215,10 @@ function TabButton({
       aria-selected={active}
       aria-controls={controls}
       onClick={onClick}
-      className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition sm:flex-none ${
+      className={`inline-flex min-h-[44px] items-center gap-1.5 border-b-2 px-2.5 text-[13px] font-medium transition-[color,border-color] duration-[140ms] [transition-timing-function:var(--ease)] ${
         active
-          ? "bg-stone-800 text-white shadow-sm"
-          : "text-stone-600 hover:bg-white hover:text-stone-900"
+          ? "border-accent text-ink"
+          : "border-transparent text-ink-muted hover:border-line-strong hover:text-ink-secondary"
       }`}
     >
       {children}
@@ -237,11 +228,7 @@ function TabButton({
 
 function TabCount({ active, children }: { active: boolean; children: React.ReactNode }) {
   return (
-    <span
-      className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums ${
-        active ? "bg-white/20 text-white" : "bg-stone-200 text-stone-600"
-      }`}
-    >
+    <span className={`tabular-nums ${active ? "text-ink-secondary" : "text-ink-muted"}`}>
       {children}
     </span>
   );

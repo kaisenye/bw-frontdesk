@@ -23,21 +23,14 @@ export const CATEGORY_LABEL: Record<KnowledgeCategory, string> = {
   contact: "Contact",
 };
 
-const CATEGORY_STYLE: Record<KnowledgeCategory, string> = {
-  hours: "border-sky-200 bg-sky-50 text-sky-800",
-  tuition: "border-amber-200 bg-amber-50 text-amber-800",
-  health: "border-rose-200 bg-rose-50 text-rose-800",
-  food: "border-lime-200 bg-lime-50 text-lime-800",
-  enrollment: "border-violet-200 bg-violet-50 text-violet-800",
-  policies: "border-stone-300 bg-stone-100 text-stone-700",
-  contact: "border-teal-200 bg-teal-50 text-teal-800",
-};
-
+/**
+ * Categories are an organizing device, not a signal. Seven tinted badges would
+ * spend the whole palette on taxonomy, so all of them get one quiet neutral
+ * chip and the semantic colors stay meaningful where they do appear.
+ */
 export function CategoryBadge({ category }: { category: KnowledgeCategory }) {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.04em] uppercase ${CATEGORY_STYLE[category]}`}
-    >
+    <span className="inline-flex shrink-0 items-center rounded-[var(--radius-sm)] border border-line bg-surface-sunken px-1.5 py-px text-[11px] font-medium text-ink-secondary">
       {CATEGORY_LABEL[category]}
     </span>
   );
@@ -45,14 +38,14 @@ export function CategoryBadge({ category }: { category: KnowledgeCategory }) {
 
 export function OperatorBadge() {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] border border-accent-border bg-accent-quiet px-1.5 py-px text-[11px] font-medium text-accent-text">
       <svg
         viewBox="0 0 20 20"
         aria-hidden="true"
-        className="h-3 w-3"
+        className="h-2.5 w-2.5"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.2"
+        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
@@ -65,33 +58,33 @@ export function OperatorBadge() {
 
 const STATUS_META: Record<
   AnswerStatus,
-  { label: string; icon: string; className: string }
+  { label: string; className: string; dot: string }
 > = {
   answered: {
     label: "Answered",
-    icon: "✅",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    className: "border-line bg-surface-sunken text-ink-secondary",
+    dot: "bg-accent",
   },
   escalated: {
     label: "Sent to staff",
-    icon: "⚠️",
-    className: "border-amber-300 bg-amber-50 text-amber-900",
+    className: "border-warn-border bg-warn-quiet text-warn-text",
+    dot: "bg-warn",
   },
   gap: {
     label: "Needs an answer",
-    icon: "❓",
-    className: "border-rose-300 bg-rose-50 text-rose-900",
+    className: "border-gap-border bg-gap-quiet text-gap-text",
+    dot: "bg-gap",
   },
 };
 
-/** Icon + text label so status never depends on color alone. */
+/** Dot + text label so status never depends on color alone. */
 export function StatusBadge({ status }: { status: AnswerStatus }) {
   const meta = STATUS_META[status];
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.className}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border px-1.5 py-px text-[11px] font-medium whitespace-nowrap ${meta.className}`}
     >
-      <span aria-hidden="true">{meta.icon}</span>
+      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
       {meta.label}
     </span>
   );

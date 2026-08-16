@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { newId, resolveLogItem, saveEntry } from "@/lib/store";
 import type { KnowledgeEntry, QuestionLogItem } from "@/lib/types";
 import { EntryEditor, type EntryDraft } from "./EntryEditor";
-import { StatusBadge, relativeTime } from "./shared";
+import { CategoryBadge, StatusBadge, relativeTime } from "./shared";
 
 interface InboxTabProps {
   log: QuestionLogItem[];
@@ -56,11 +56,20 @@ function suggestTitle(question: string): string {
     .join(" ");
 }
 
+/**
+ * Two panes, Intercom style: a scannable list of parent questions on the left,
+ * the full conversation and the operator's actions on the right. Below md the
+ * two panes take turns instead of sitting side by side, because a phone has
+ * room for exactly one of them.
+ */
 export function InboxTab({ log, entries }: InboxTabProps) {
   const [filter, setFilter] = useState<InboxFilter>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composingId, setComposingId] = useState<string | null>(null);
   const [justResolvedId, setJustResolvedId] = useState<string | null>(null);
   const [reviewedIds, setReviewedIds] = useState<string[]>([]);
+  // Mobile only: which pane the operator is looking at right now.
+  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
 
   const sorted = useMemo(
     () =>
@@ -99,6 +108,22 @@ export function InboxTab({ log, entries }: InboxTabProps) {
 
   const attentionCount = stats.escalated + stats.gaps;
 
+  // Selection is derived, not synced. If the chosen row is still in the list it
+  // stays put through log updates and filter changes; otherwise the top row
+  // takes over, which is also the default on first paint.
+  const selected = visible.find((item) => item.id === selectedId) ?? visible[0];
+
+  function handleSelect(id: string) {
+    setSelectedId(id);
+    setMobileView("detail");
+    if (composingId !== id) setComposingId(null);
+  }
+
+  function handleFilter(next: InboxFilter) {
+    setFilter(next);
+    setMobileView("list");
+  }
+
   /** The improvement loop: write the missing entry, then close the gap it came from. */
   function handleAnswerGap(item: QuestionLogItem, draft: EntryDraft) {
     const entry: KnowledgeEntry = {
@@ -122,161 +147,354 @@ export function InboxTab({ log, entries }: InboxTabProps) {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <StatTiles stats={stats} />
+    <div className="flex flex-col gap-4">
+      <MetricStrip stats={stats} />
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter questions">
-        <FilterChip
-          label="All"
-          count={stats.total}
-          active={filter === "all"}
-          onClick={() => setFilter("all")}
-        />
-        <FilterChip
-          label="Needs attention"
-          count={attentionCount}
-          active={filter === "attention"}
-          onClick={() => setFilter("attention")}
-          urgent={attentionCount > 0}
-        />
-        <FilterChip
-          label="Answered"
-          count={stats.answered}
-          active={filter === "answered"}
-          onClick={() => setFilter("answered")}
-        />
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface">
+        <div className="flex min-h-[520px] flex-col md:h-[calc(100vh-19rem)] md:min-h-[460px] md:flex-row">
+          {/* Left pane: the queue. */}
+          <div
+            className={`flex min-h-0 flex-1 flex-col md:w-[312px] md:flex-none md:border-r md:border-line ${
+              mobileView === "detail" ? "hidden md:flex" : "flex"
+            }`}
+          >
+            <div
+              className="flex flex-wrap items-center gap-1 border-b border-line px-2 py-1.5"
+              role="group"
+              aria-label="Filter questions"
+            >
+              <FilterTab
+                label="All"
+                count={stats.total}
+                active={filter === "all"}
+                onClick={() => handleFilter("all")}
+              />
+              <FilterTab
+                label="Needs attention"
+                count={attentionCount}
+                active={filter === "attention"}
+                onClick={() => handleFilter("attention")}
+                urgent={attentionCount > 0}
+              />
+              <FilterTab
+                label="Answered"
+                count={stats.answered}
+                active={filter === "answered"}
+                onClick={() => handleFilter("answered")}
+              />
+            </div>
+
+            {visible.length === 0 ? (
+              <p className="px-4 py-12 text-center text-[13px] text-ink-muted">
+                {filter === "attention"
+                  ? "You're all caught up. The front desk handled everything."
+                  : "No questions here yet."}
+              </p>
+            ) : (
+              <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto">
+                {visible.map((item) => (
+                  <li key={item.id}>
+                    <ConversationRow
+                      item={item}
+                      active={selected?.id === item.id}
+                      onSelect={() => handleSelect(item.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Right pane: the whole story for one question. */}
+          <div
+            className={`min-h-0 flex-1 flex-col overflow-y-auto bg-surface-sunken md:bg-surface ${
+              mobileView === "detail" ? "flex" : "hidden md:flex"
+            }`}
+          >
+            {selected ? (
+              <DetailPane
+                key={selected.id}
+                item={selected}
+                source={selected.sourceId ? entryById.get(selected.sourceId) : undefined}
+                composing={composingId === selected.id}
+                celebrating={justResolvedId === selected.id}
+                reviewed={reviewedIds.includes(selected.id)}
+                onStartComposing={() => setComposingId(selected.id)}
+                onCancelComposing={() => setComposingId(null)}
+                onSaveAnswer={(draft) => handleAnswerGap(selected, draft)}
+                onMarkReviewed={() => setReviewedIds((prev) => [...prev, selected.id])}
+                onBack={() => setMobileView("list")}
+              />
+            ) : (
+              <div className="flex flex-1 items-center justify-center px-6 py-16">
+                <p className="max-w-[26ch] text-center text-[13px] text-ink-muted">
+                  {stats.total === 0
+                    ? "Nothing has come in yet. Parent questions land here as they get asked."
+                    : "Pick a question on the left to see the details."}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One row in the queue. The question is the subject line, clamped to two lines,
+ * with a status dot and a relative timestamp riding along as metadata.
+ */
+function ConversationRow({
+  item,
+  active,
+  onSelect,
+}: {
+  item: QuestionLogItem;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-current={active ? "true" : undefined}
+      className={`relative flex w-full min-h-[44px] cursor-pointer flex-col gap-1 px-3 py-2.5 text-left transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] ${
+        active ? "bg-accent-quiet" : "hover:bg-surface-hover"
+      }`}
+    >
+      {/* A hairline rail carries status at the row edge, so the eye can scan the
+          left margin without reading every label. */}
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-0.5 ${
+          active ? "bg-accent" : item.status === "gap" ? "bg-gap" : item.status === "escalated" ? "bg-warn" : "bg-transparent"
+        }`}
+      />
+
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className="min-w-0 flex-1 overflow-hidden text-[13px] leading-snug font-medium text-ink"
+          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+        >
+          {item.question}
+        </p>
+        <span className="shrink-0 text-[12px] whitespace-nowrap text-ink-muted tabular-nums">
+          {relativeTime(item.askedAt)}
+        </span>
       </div>
 
-      {visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-stone-300 bg-white px-5 py-10 text-center text-sm text-stone-500">
-          {filter === "attention"
-            ? "Nothing needs your attention right now. The front desk handled everything."
-            : "No questions here yet."}
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-3.5">
-          {visible.map((item) => {
-            const source = item.sourceId ? entryById.get(item.sourceId) : undefined;
-            const isComposing = composingId === item.id;
-            const celebrating = justResolvedId === item.id;
-            const isReviewed = reviewedIds.includes(item.id);
+      <StatusLine status={item.status} />
+    </button>
+  );
+}
 
-            return (
-              <li
-                key={item.id}
-                className={`rounded-2xl border bg-white p-5 shadow-sm transition ${
-                  celebrating
-                    ? "border-emerald-400 ring-2 ring-emerald-500/20"
-                    : item.status === "gap"
-                      ? "border-rose-200"
-                      : item.status === "escalated"
-                        ? "border-amber-200"
-                        : "border-stone-200"
-                }`}
+const STATUS_TEXT = {
+  answered: { label: "Answered", dot: "bg-accent", text: "text-ink-muted" },
+  escalated: { label: "Sent to staff", dot: "bg-warn", text: "text-warn-text" },
+  gap: { label: "Needs an answer", dot: "bg-gap", text: "text-gap-text" },
+} as const;
+
+/** Dot plus words, so the row never leans on color by itself. */
+function StatusLine({ status }: { status: QuestionLogItem["status"] }) {
+  const meta = STATUS_TEXT[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[12px] ${meta.text}`}>
+      <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
+      {meta.label}
+    </span>
+  );
+}
+
+interface DetailPaneProps {
+  item: QuestionLogItem;
+  source: KnowledgeEntry | undefined;
+  composing: boolean;
+  celebrating: boolean;
+  reviewed: boolean;
+  onStartComposing: () => void;
+  onCancelComposing: () => void;
+  onSaveAnswer: (draft: EntryDraft) => void;
+  onMarkReviewed: () => void;
+  onBack: () => void;
+}
+
+function DetailPane({
+  item,
+  source,
+  composing,
+  celebrating,
+  reviewed,
+  onStartComposing,
+  onCancelComposing,
+  onSaveAnswer,
+  onMarkReviewed,
+  onBack,
+}: DetailPaneProps) {
+  return (
+    <article className="flex min-h-0 flex-1 flex-col bg-surface">
+      <header className="flex items-center gap-2 border-b border-line px-3 py-1.5 md:px-5">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] px-1.5 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink md:hidden"
+        >
+          <svg
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12.5 5 7.5 10l5 5" />
+          </svg>
+          All questions
+        </button>
+
+        <div className="flex min-h-[44px] flex-1 flex-wrap items-center justify-end gap-2 md:justify-between">
+          <StatusBadge status={item.status} />
+          <span className="text-[12px] text-ink-muted tabular-nums">
+            Asked {relativeTime(item.askedAt)}
+          </span>
+        </div>
+      </header>
+
+      <div className="flex flex-1 flex-col gap-4 px-3 py-4 md:px-5">
+        <section>
+          <h2 className="text-[12px] font-medium text-ink-muted">A parent asked</h2>
+          <p className="mt-1 font-display text-[15px] leading-snug font-semibold tracking-[-0.01em] text-ink">
+            {item.question}
+          </p>
+        </section>
+
+        <section>
+          <h3 className="text-[12px] font-medium text-ink-muted">The front desk said</h3>
+          <p className="mt-1 border-l-2 border-line pl-3 text-[13px] leading-relaxed text-ink-secondary">
+            {item.answer}
+          </p>
+        </section>
+
+        {source ? (
+          <section className="rounded-[var(--radius)] border border-line bg-surface-sunken p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-[12px] font-medium text-ink-muted">Answered from</h3>
+              <CategoryBadge category={source.category} />
+              {item.resolvedByEntryId ? (
+                <span className="text-[12px] font-medium text-accent-text">you wrote this</span>
+              ) : null}
+            </div>
+            <p className="mt-1.5 text-[13px] font-semibold text-ink">{source.title}</p>
+            {source.body ? (
+              <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line text-ink-secondary">
+                {source.body}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
+        {celebrating ? (
+          <p
+            role="status"
+            className="flex items-center gap-1.5 rounded-[var(--radius)] border border-accent-border bg-accent-quiet px-2.5 py-2 text-[13px] font-medium text-accent-text"
+          >
+            <svg
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+              className="h-3.5 w-3.5 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 10.5 8 14.5 16 6" />
+            </svg>
+            Got it. The front desk can answer this one now.
+          </p>
+        ) : null}
+
+        {item.status === "gap" && !composing ? (
+          <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-gap-border bg-gap-quiet px-3 py-2.5">
+            <p className="flex-1 text-[12px] text-gap-text">
+              <span className="font-medium">Nothing in the knowledge base covers this.</span>{" "}
+              Write it once and the front desk takes it from here.
+            </p>
+            <button
+              type="button"
+              onClick={onStartComposing}
+              className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover"
+            >
+              Answer this
+            </button>
+          </div>
+        ) : null}
+
+        {item.status === "gap" && composing ? (
+          <div className="rounded-[var(--radius)] border border-accent-border bg-surface p-3.5">
+            <h3 className="mb-3 font-display text-[13px] font-semibold tracking-[-0.01em] text-ink">
+              Teach the front desk this answer
+            </h3>
+            <EntryEditor
+              initial={{
+                title: suggestTitle(item.question),
+                category: "policies",
+                body: "",
+              }}
+              submitLabel="Add to knowledge base"
+              bodyPlaceholder="Answer the parent's question here, the way you'd say it in person."
+              onSave={onSaveAnswer}
+              onCancel={onCancelComposing}
+            />
+          </div>
+        ) : null}
+
+        {item.status === "escalated" ? (
+          <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-warn-border bg-warn-quiet px-3 py-2.5">
+            <p className="flex-1 text-[12px] text-warn-text">
+              <span className="font-medium">A human got looped in.</span> The front desk
+              handed this to staff instead of guessing.
+            </p>
+            {reviewed ? (
+              <span
+                role="status"
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-warn-text"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <p className="min-w-0 flex-1 text-[15px] leading-relaxed font-semibold text-stone-900">
-                    {item.question}
-                  </p>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <StatusBadge status={item.status} />
-                    <span className="text-xs whitespace-nowrap text-stone-500">
-                      {relativeTime(item.askedAt)}
-                    </span>
-                  </div>
-                </div>
+                <svg
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 10.5 8 14.5 16 6" />
+                </svg>
+                Marked reviewed
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onMarkReviewed}
+                className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] border border-warn-border bg-surface px-2.5 text-[12px] font-medium text-warn-text transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-warn-quiet"
+              >
+                Mark reviewed
+              </button>
+            )}
+          </div>
+        ) : null}
 
-                <p className="mt-2.5 border-l-2 border-stone-200 pl-3 text-[14.5px] leading-relaxed text-stone-600">
-                  {item.answer}
-                </p>
-
-                {source ? (
-                  <p className="mt-2.5 text-xs text-stone-500">
-                    <span className="font-semibold text-stone-600">Source:</span>{" "}
-                    {source.title}
-                    {item.resolvedByEntryId ? (
-                      <span className="ml-1.5 font-semibold text-emerald-700">
-                        · you wrote this
-                      </span>
-                    ) : null}
-                  </p>
-                ) : null}
-
-                {celebrating ? (
-                  <p
-                    role="status"
-                    className="mt-3.5 flex items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-3 text-sm font-semibold text-emerald-900"
-                  >
-                    <span aria-hidden="true">✅</span>
-                    Added to your knowledge base — the front desk can answer this now.
-                  </p>
-                ) : null}
-
-                {item.status === "gap" && !isComposing ? (
-                  <div className="mt-3.5 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setComposingId(item.id)}
-                      className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:outline-none"
-                    >
-                      Answer this
-                    </button>
-                    <span className="text-xs text-stone-500">
-                      Write it once — the front desk handles it from now on.
-                    </span>
-                  </div>
-                ) : null}
-
-                {item.status === "gap" && isComposing ? (
-                  <div className="mt-4 rounded-xl border-2 border-emerald-300 bg-emerald-50/40 p-4">
-                    <h3 className="mb-3.5 text-sm font-semibold text-stone-900">
-                      Teach the front desk this answer
-                    </h3>
-                    <EntryEditor
-                      initial={{
-                        title: suggestTitle(item.question),
-                        category: "policies",
-                        body: "",
-                      }}
-                      submitLabel="Add to knowledge base"
-                      bodyPlaceholder="Answer the parent's question here, the way you would say it in person."
-                      onSave={(draft) => handleAnswerGap(item, draft)}
-                      onCancel={() => setComposingId(null)}
-                    />
-                  </div>
-                ) : null}
-
-                {item.status === "escalated" ? (
-                  <div className="mt-3.5 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-3">
-                    <p className="flex-1 text-sm text-amber-900">
-                      <span className="font-semibold">A human was looped in.</span> The
-                      front desk correctly handed this to staff rather than answering it
-                      itself.
-                    </p>
-                    {isReviewed ? (
-                      <span
-                        role="status"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-900"
-                      >
-                        <span aria-hidden="true">✅</span> Marked reviewed
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setReviewedIds((prev) => [...prev, item.id])}
-                        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none"
-                      >
-                        Mark reviewed
-                      </button>
-                    )}
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+        {item.status === "answered" && !celebrating ? (
+          <p className="text-[12px] text-ink-muted">
+            No action needed here. The front desk had this one covered.
+          </p>
+        ) : null}
+      </div>
+    </article>
   );
 }
 
@@ -288,73 +506,60 @@ interface Stats {
   answeredPct: number;
 }
 
-function StatTiles({ stats }: { stats: Stats }) {
+/**
+ * One horizontal strip instead of four pastel cards. Every number shares the
+ * same treatment, and only the two that imply work carry semantic color, so
+ * "3 gaps" is visible at a glance while "48 asked" stays background context.
+ * All values come straight from the log.
+ */
+function MetricStrip({ stats }: { stats: Stats }) {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Tile
-        value={String(stats.total)}
-        label="Questions asked"
-        note={`${stats.answered} answered without staff time`}
-      />
-      <Tile
-        value={`${stats.answeredPct}%`}
-        label="Answered on the spot"
-        note="Straight from your knowledge base"
-        tone="emerald"
-      />
-      <Tile
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-2.5">
+      <Metric value={String(stats.total)} label="asked" />
+      <Metric value={`${stats.answeredPct}%`} label="answered on the spot" />
+      <Metric
         value={String(stats.escalated)}
-        label="Sent to staff"
-        note="Correctly routed to a human"
-        tone="amber"
+        label="sent to staff"
+        tone={stats.escalated > 0 ? "warn" : "neutral"}
       />
-      <Tile
+      <Metric
         value={String(stats.gaps)}
-        label="Knowledge gaps"
-        note={stats.gaps > 0 ? "Waiting on your answer" : "Nothing missing"}
-        tone={stats.gaps > 0 ? "rose" : "stone"}
+        label={stats.gaps === 1 ? "gap to fill" : "gaps to fill"}
+        tone={stats.gaps > 0 ? "gap" : "neutral"}
       />
+      <p className="ml-auto hidden text-[12px] text-ink-muted lg:block">
+        {stats.gaps > 0
+          ? "Fill a gap and it stops coming back."
+          : "Nothing missing right now."}
+      </p>
     </div>
   );
 }
 
-function Tile({
+function Metric({
   value,
   label,
-  note,
-  tone = "stone",
+  tone = "neutral",
 }: {
   value: string;
   label: string;
-  note: string;
-  tone?: "stone" | "emerald" | "amber" | "rose";
+  tone?: "neutral" | "warn" | "gap";
 }) {
-  const toneClass = {
-    stone: "border-stone-200 bg-white",
-    emerald: "border-emerald-200 bg-emerald-50/70",
-    amber: "border-amber-200 bg-amber-50/70",
-    rose: "border-rose-200 bg-rose-50/70",
-  }[tone];
-
   const valueClass = {
-    stone: "text-stone-900",
-    emerald: "text-emerald-800",
-    amber: "text-amber-800",
-    rose: "text-rose-800",
+    neutral: "text-ink",
+    warn: "text-warn-text",
+    gap: "text-gap-text",
   }[tone];
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${toneClass}`}>
-      <p className={`text-3xl font-semibold tracking-tight tabular-nums ${valueClass}`}>
-        {value}
-      </p>
-      <p className="mt-1 text-[13px] font-semibold text-stone-700">{label}</p>
-      <p className="mt-0.5 text-xs leading-snug text-stone-500">{note}</p>
-    </div>
+    <p className="flex items-baseline gap-1.5">
+      <span className={`text-[15px] font-semibold tabular-nums ${valueClass}`}>{value}</span>
+      <span className="text-[12px] text-ink-muted">{label}</span>
+    </p>
   );
 }
 
-function FilterChip({
+function FilterTab({
   label,
   count,
   active,
@@ -372,20 +577,16 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition ${
+      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] ${
         active
-          ? "border-stone-800 bg-stone-800 text-white"
-          : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+          ? "bg-surface-sunken text-ink"
+          : "text-ink-muted hover:bg-surface-hover hover:text-ink-secondary"
       }`}
     >
       {label}
       <span
-        className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-1.5 py-0.5 text-xs tabular-nums ${
-          active
-            ? "bg-white/20 text-white"
-            : urgent
-              ? "bg-rose-100 text-rose-800"
-              : "bg-stone-100 text-stone-600"
+        className={`tabular-nums ${
+          urgent && !active ? "text-gap-text" : active ? "text-ink-secondary" : "text-ink-muted"
         }`}
       >
         {count}

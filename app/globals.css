@@ -1,24 +1,154 @@
 @import "tailwindcss";
 
 /*
- * This prototype deliberately commits to one warm light theme.
- * A parent opening the front desk at 6am and a director on a laptop should
- * see the same thing, so we do not follow prefers-color-scheme.
+ * Light only, by choice: a parent checks a policy in a bright parking lot and a
+ * director works in a daylit office. Neither is served by a dark theme.
+ *
+ * Neutrals are tinted toward the teal brand hue (chroma 0.004-0.012) so the
+ * surfaces and the accent feel like one system rather than gray plus green.
  */
 :root {
-  --background: #f7f4ed;
-  --foreground: #2b2a26;
+  /* Neutrals tinted toward brightwheel's indigo (hue 280) so the surfaces and
+   * the brand accent read as one system rather than gray plus purple. */
+  --bg: oklch(0.984 0.003 280);
+  --surface: oklch(1 0 0);
+  --surface-sunken: oklch(0.969 0.005 280);
+  --surface-hover: oklch(0.963 0.008 280);
+
+  --text: oklch(0.24 0.018 280);
+  --text-secondary: oklch(0.47 0.016 280);
+  --text-muted: oklch(0.605 0.014 280);
+
+  --border: oklch(0.912 0.008 280);
+  --border-strong: oklch(0.85 0.012 280);
+  --border-focus: oklch(0.53 0.21 280);
+
+  /* brightwheel indigo, sampled from the product: oklch(0.528 0.212 280). */
+  --accent: oklch(0.528 0.212 280);
+  --accent-hover: oklch(0.468 0.208 280);
+  --accent-quiet: oklch(0.965 0.022 280);
+  --accent-border: oklch(0.878 0.06 280);
+  --accent-text: oklch(0.44 0.185 280);
+
+  /* Routed to a human. Amber reads as "someone is on it", not as an error. */
+  --warn: oklch(0.66 0.14 62);
+  --warn-quiet: oklch(0.973 0.03 75);
+  --warn-border: oklch(0.885 0.068 70);
+  --warn-text: oklch(0.47 0.105 55);
+
+  /* Unanswered. brightwheel's coral, kept clearly distinct from the indigo. */
+  --gap: oklch(0.63 0.185 22);
+  --gap-quiet: oklch(0.966 0.022 22);
+  --gap-border: oklch(0.888 0.055 22);
+  --gap-text: oklch(0.487 0.165 22);
+
+  /* Grounded and cited. brightwheel's teal, used for confirmation moments. */
+  --good: oklch(0.58 0.105 192);
+  --good-quiet: oklch(0.962 0.025 192);
+  --good-border: oklch(0.872 0.052 192);
+  --good-text: oklch(0.435 0.08 192);
+
+  /* 4pt scale. 8pt alone is too coarse for dense UI. */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --radius-sm: 5px;
+  --radius: 7px;
+  --radius-lg: 10px;
+
+  /* The parent chat runs softer than the operator tool on purpose: a worried
+   * parent on a phone should feel held, a director scanning rows should not. */
+  --radius-soft: 14px;
+  --radius-bubble: 18px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.32, 0.72, 0.24, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-ink: var(--text);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-muted: var(--text-muted);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-quiet: var(--accent-quiet);
+  --color-accent-border: var(--accent-border);
+  --color-accent-text: var(--accent-text);
+  --color-warn: var(--warn);
+  --color-warn-quiet: var(--warn-quiet);
+  --color-warn-border: var(--warn-border);
+  --color-warn-text: var(--warn-text);
+  --color-gap: var(--gap);
+  --color-gap-quiet: var(--gap-quiet);
+  --color-gap-border: var(--gap-border);
+  --color-gap-text: var(--gap-text);
+  --color-good: var(--good);
+  --color-good-quiet: var(--good-quiet);
+  --color-good-border: var(--good-border);
+  --color-good-text: var(--good-text);
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), var(--font-public-sans), sans-serif;
+  --radius-card: var(--radius-lg);
+  --radius-soft: var(--radius-soft);
+  --radius-bubble: var(--radius-bubble);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Anything that responds to a click should say so. */
+button:not(:disabled),
+[role="tab"]:not(:disabled),
+summary,
+a[href],
+label[for],
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--accent-quiet);
+  color: var(--accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

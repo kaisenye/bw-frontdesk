@@ -148,61 +148,48 @@ export default function ParentChatPage() {
   const showEmptyState = messages.length === 0;
 
   return (
-    <div className="flex flex-1 flex-col bg-[#faf7f2] font-sans text-stone-900">
+    <div className="flex flex-1 flex-col bg-bg font-sans text-ink">
       <style>{`
-        @keyframes sunny-rise {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes fd-rise {
+          from { opacity: 0; transform: translateY(10px) scale(0.985); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes sunny-expand {
-          from { opacity: 0; max-height: 0; }
-          to { opacity: 1; max-height: 1200px; }
+        @keyframes fd-expand {
+          from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes sunny-dot {
-          0%, 60%, 100% { opacity: 0.28; transform: translateY(0); }
-          30% { opacity: 1; transform: translateY(-3px); }
+        /* Each dot lifts and brightens in turn, so the wait reads as someone
+         * actually looking something up rather than a spinner. */
+        @keyframes fd-dot {
+          0%, 70%, 100% { opacity: 0.3; transform: translateY(0) scale(0.85); }
+          35% { opacity: 1; transform: translateY(-3px) scale(1); }
         }
         @media (prefers-reduced-motion: reduce) {
-          [data-sunny-anim] { animation: none !important; }
+          [data-fd-anim] { animation: none !important; }
         }
       `}</style>
 
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#faf7f2]/90 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-[640px] items-center gap-3 px-4 py-3 sm:px-6">
-          <div
-            aria-hidden="true"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600/10 text-lg"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5 text-emerald-700"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="3.4" />
-              <path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4M5.8 5.8l1.7 1.7M16.5 16.5l1.7 1.7M18.2 5.8l-1.7 1.7M7.5 16.5l-1.7 1.7" />
-            </svg>
-          </div>
-
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[680px] items-center gap-2.5 px-4 py-2.5 sm:px-6">
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[16px] leading-tight font-semibold text-stone-900">
+            <h1 className="truncate font-display text-[15px] leading-tight font-semibold tracking-[-0.01em] text-ink">
               {/* The full name overflows a 375px header, so phones get the short form. */}
               <span className="sm:hidden">{CENTER.shortName}</span>
               <span className="hidden sm:inline">{CENTER.name}</span>
             </h1>
-            <p className="mt-0.5 flex items-center gap-1.5 text-[12px] leading-tight text-stone-500">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              AI Front Desk
+            <p className="mt-0.5 flex items-center gap-1.5 text-[12px] leading-tight text-ink-muted">
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-accent"
+              />
+              Front desk
             </p>
           </div>
 
           <Link
             href="/admin"
-            className="-mr-2 flex min-h-[44px] items-center rounded-full px-3 text-[13px] font-medium text-stone-500 transition-colors hover:bg-stone-200/60 hover:text-stone-700"
+            className="-mr-1.5 flex min-h-[44px] items-center rounded-[var(--radius-soft)] px-3 text-[13px] font-medium text-ink-secondary transition-[color,background-color,transform] duration-200 [transition-timing-function:var(--ease-soft)] hover:bg-surface-hover hover:text-ink active:scale-[0.97]"
           >
             Staff view
           </Link>
@@ -214,7 +201,7 @@ export default function ParentChatPage() {
         <div
           aria-live="polite"
           aria-label="Conversation with the front desk"
-          className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 pt-6 pb-8 sm:px-6"
+          className="mx-auto flex w-full max-w-[680px] flex-col gap-3.5 px-4 pt-6 pb-8 sm:px-6"
         >
           {showEmptyState ? (
             <EmptyState onPick={ask} disabled={busy} />
@@ -237,13 +224,13 @@ export default function ParentChatPage() {
       </main>
 
       {/* Composer */}
-      <div className="sticky bottom-0 z-20 border-t border-stone-200/80 bg-[#faf7f2]/95 backdrop-blur-md">
+      <div className="sticky bottom-0 z-20 border-t border-line bg-bg/95 backdrop-blur-md">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             void ask(draft);
           }}
-          className="mx-auto flex w-full max-w-[640px] items-end gap-2 px-4 py-3 sm:px-6"
+          className="mx-auto flex w-full max-w-[680px] items-center gap-2 px-4 pt-3.5 sm:px-6"
         >
           <label htmlFor="parent-question" className="sr-only">
             Ask the front desk a question
@@ -256,19 +243,20 @@ export default function ParentChatPage() {
             onChange={(e) => setDraft(e.target.value)}
             disabled={busy}
             autoComplete="off"
-            placeholder={busy ? "Checking the center's policies…" : "Ask a question…"}
-            className="min-h-[48px] flex-1 rounded-full border border-stone-300 bg-white px-4 text-[16px] text-stone-900 placeholder:text-stone-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25 focus:outline-none disabled:bg-stone-100 disabled:text-stone-400"
+            placeholder={busy ? "Checking the handbook…" : "Ask about hours, tuition, sick days…"}
+            /* 16px on the input only, so iOS Safari doesn't zoom on focus. */
+            className="min-h-[46px] flex-1 rounded-[var(--radius-soft)] border border-line-strong bg-surface px-4 text-[16px] text-ink shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors duration-200 [transition-timing-function:var(--ease-soft)] placeholder:text-ink-muted hover:border-accent-border focus:border-accent focus:outline-none disabled:bg-surface-sunken disabled:text-ink-muted sm:text-[15px]"
           />
           <button
             type="submit"
             disabled={busy || draft.trim().length === 0}
             aria-label="Send question"
-            className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full bg-emerald-700 text-white transition-all duration-150 hover:bg-emerald-800 active:scale-[0.94] disabled:bg-stone-300 disabled:active:scale-100"
+            className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[var(--radius-soft)] bg-accent text-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-[color,background-color,transform,box-shadow] duration-200 [transition-timing-function:var(--ease-soft)] hover:bg-accent-hover active:scale-[0.93] disabled:bg-surface-sunken disabled:text-ink-muted disabled:shadow-none disabled:active:scale-100"
           >
             <svg
               viewBox="0 0 24 24"
               aria-hidden="true"
-              className="h-5 w-5"
+              className="h-[18px] w-[18px]"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.9"
@@ -279,9 +267,9 @@ export default function ParentChatPage() {
             </svg>
           </button>
         </form>
-        <p className="mx-auto w-full max-w-[640px] px-4 pb-3 text-center text-[11px] text-stone-400 sm:px-6">
-          Answers come from {CENTER.shortName}&rsquo;s written policies. For anything urgent,
-          call {CENTER.phone}.
+        <p className="mx-auto w-full max-w-[680px] px-4 py-2.5 text-center text-[11px] leading-[1.5] text-ink-muted sm:px-6">
+          Everything here comes straight from {CENTER.shortName}&rsquo;s handbook. Need
+          someone right now? Call {CENTER.phone}.
         </p>
       </div>
     </div>
@@ -296,30 +284,40 @@ function EmptyState({
   disabled: boolean;
 }) {
   return (
-    <div data-sunny-anim style={{ animation: "sunny-rise 400ms ease-out both" }}>
-      <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-stone-200 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
-        <p className="text-[16px] leading-relaxed text-stone-800">
-          Hi there — this is the {CENTER.shortName} front desk. Ask me anything about hours,
-          tuition, illness policy, meals, or tours, and I&rsquo;ll answer straight from our
-          written policies.
+    <div>
+      {/* The greeting lands first, then the label, then the chips cascade in
+       * one by one. 70ms apart reads as a hand dealing cards, not a loading bar. */}
+      <div
+        data-fd-anim
+        style={{ animation: "fd-rise 320ms var(--ease-soft) both" }}
+        className="max-w-[88%] rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-line bg-surface px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+      >
+        <p className="text-[15px] leading-[1.65] text-ink">
+          Hi there. This is the {CENTER.shortName} front desk. Ask about hours, tuition,
+          sick days, meals, or tours, and you&rsquo;ll get the answer straight from our
+          handbook.
         </p>
       </div>
 
-      <p className="mt-6 px-1 text-[12px] font-semibold tracking-[0.06em] text-stone-400 uppercase">
-        Common questions
+      <p
+        data-fd-anim
+        style={{ animation: "fd-rise 320ms var(--ease-soft) 110ms both" }}
+        className="mt-6 mb-2.5 px-0.5 text-[10px] font-semibold tracking-[0.08em] text-ink-muted uppercase"
+      >
+        What parents usually ask
       </p>
-      <div className="mt-2.5 flex flex-col items-start gap-2">
+      <div className="flex flex-col items-start gap-2">
         {SUGGESTED_QUESTIONS.map((q, i) => (
           <button
             key={q}
             type="button"
             disabled={disabled}
             onClick={() => onPick(q)}
-            data-sunny-anim
+            data-fd-anim
             style={{
-              animation: `sunny-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) ${80 + i * 55}ms both`,
+              animation: `fd-rise 320ms var(--ease-soft) ${180 + i * 70}ms both`,
             }}
-            className="flex min-h-[44px] items-center rounded-full border border-stone-300 bg-white px-4 py-2.5 text-left text-[15px] text-stone-700 transition-all duration-150 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.97] disabled:opacity-50"
+            className="flex min-h-[44px] items-center rounded-[var(--radius-soft)] border border-line bg-surface px-3.5 py-2.5 text-left text-[14px] font-medium text-ink-secondary transition-[color,background-color,border-color,transform] duration-200 [transition-timing-function:var(--ease-soft)] hover:border-accent-border hover:bg-accent-quiet hover:text-accent-text active:scale-[0.98] disabled:opacity-50 disabled:hover:border-line disabled:hover:bg-surface disabled:hover:text-ink-secondary disabled:active:scale-100"
           >
             {q}
           </button>
@@ -333,10 +331,12 @@ function ParentBubble({ text }: { text: string }) {
   return (
     <div
       className="flex justify-end"
-      data-sunny-anim
-      style={{ animation: "sunny-rise 300ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+      data-fd-anim
+      style={{ animation: "fd-rise 240ms var(--ease-soft) both" }}
     >
-      <p className="max-w-[85%] rounded-2xl rounded-br-md bg-emerald-700 px-4 py-3 text-[16px] leading-relaxed whitespace-pre-line text-white shadow-[0_1px_2px_rgba(6,78,59,0.16)]">
+      {/* The small bottom-right corner is the tail: it points the bubble back at
+       * whoever typed it, which is what makes a transcript read as a conversation. */}
+      <p className="max-w-[85%] rounded-[var(--radius-bubble)] rounded-br-[var(--radius-sm)] bg-accent px-4 py-2.5 text-[15px] leading-[1.65] whitespace-pre-line text-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         {text}
       </p>
     </div>
@@ -356,20 +356,22 @@ function DeskMessage({
     return (
       <div
         className="flex justify-start"
-        data-sunny-anim
-        style={{ animation: "sunny-rise 260ms ease-out both" }}
+        data-fd-anim
+        style={{ animation: "fd-rise 240ms var(--ease-soft) both" }}
       >
         <div
-          className="flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-stone-200 bg-white px-4 py-4"
+          className="flex items-center gap-1.5 rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-line bg-surface px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
           role="status"
           aria-label="The front desk is typing"
         >
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              data-sunny-anim
-              className="h-2 w-2 rounded-full bg-stone-400"
-              style={{ animation: `sunny-dot 1.25s ease-in-out ${i * 0.16}s infinite` }}
+              data-fd-anim
+              className="h-[7px] w-[7px] rounded-full bg-accent"
+              style={{
+                animation: `fd-dot 1.4s var(--ease-soft) ${i * 0.16}s infinite`,
+              }}
             />
           ))}
         </div>
@@ -381,23 +383,23 @@ function DeskMessage({
     return (
       <div
         className="flex justify-start"
-        data-sunny-anim
-        style={{ animation: "sunny-rise 300ms ease-out both" }}
+        data-fd-anim
+        style={{ animation: "fd-rise 240ms var(--ease-soft) both" }}
       >
-        <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-rose-200 bg-rose-50 px-4 py-3.5">
-          <p className="text-[15px] leading-relaxed text-rose-900">
-            Sorry — I couldn&rsquo;t reach the front desk just now. Please try again, or call{" "}
+        <div className="max-w-[88%] rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-gap-border bg-surface px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <p className="text-[15px] leading-[1.65] text-ink">
+            Couldn&rsquo;t reach the front desk just now. Give it another try, or call{" "}
             {CENTER.phone}.
           </p>
           <button
             type="button"
             onClick={() => onRetry(message.id, message.text)}
-            className="mt-2.5 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-rose-300 bg-white px-4 py-2 text-[14px] font-medium text-rose-800 transition-all duration-150 hover:bg-rose-100 active:scale-[0.97]"
+            className="mt-2.5 inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-soft)] border border-gap-border bg-gap-quiet px-3.5 text-[13px] font-medium text-gap-text transition-[color,background-color,border-color,transform] duration-200 [transition-timing-function:var(--ease-soft)] hover:bg-gap hover:border-gap hover:text-white active:scale-[0.97]"
           >
             <svg
               viewBox="0 0 20 20"
               aria-hidden="true"
-              className="h-4 w-4"
+              className="h-3.5 w-3.5"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.8"
@@ -421,26 +423,26 @@ function DeskMessage({
   return (
     <div
       className="flex justify-start"
-      data-sunny-anim
-      style={{ animation: "sunny-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+      data-fd-anim
+      style={{ animation: "fd-rise 280ms var(--ease-soft) both" }}
     >
-      <div className="max-w-[85%] min-w-0">
+      <div className="max-w-[88%] min-w-0">
         {response?.escalate ? (
           <EscalationCard answer={message.text} reason={response.escalationReason} />
         ) : (
-          <div className="rounded-2xl rounded-tl-md border border-stone-200 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
-            <p className="text-[16px] leading-relaxed whitespace-pre-line text-stone-800">
+          <div className="rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-line bg-surface px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-[15px] leading-[1.65] whitespace-pre-line text-ink">
               {message.text}
             </p>
 
             {sourceEntry ? <SourceChip entry={sourceEntry} /> : null}
 
             {response && response.confidence === "low" ? (
-              <p className="mt-3 flex items-start gap-2 border-t border-stone-200/70 pt-3 text-[13px] leading-relaxed text-stone-500">
+              <p className="mt-2.5 flex items-start gap-1.5 border-t border-line pt-2.5 text-[12px] leading-[1.55] text-ink-muted">
                 <svg
                   viewBox="0 0 20 20"
                   aria-hidden="true"
-                  className="mt-0.5 h-4 w-4 shrink-0 text-stone-400"
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.7"
@@ -451,8 +453,8 @@ function DeskMessage({
                   <path d="M10 6.4v4.2M10 13.6h.01" />
                 </svg>
                 <span>
-                  I&rsquo;m not fully certain on this one — it&rsquo;s worth confirming with the
-                  office at {CENTER.phone}.
+                  Not fully certain on this one. Worth double-checking with the office at{" "}
+                  {CENTER.phone}.
                 </span>
               </p>
             ) : null}

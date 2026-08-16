@@ -30,14 +30,14 @@ Daily rhythm: 7:00 arrival & free play, 9:00 circle time, 9:30 learning centers,
     updatedAt: STAMP,
     body: `Sunny Sprouts is CLOSED on these days for the 2026–2027 school year:
 
-- Labor Day — Monday, September 7, 2026
-- Veterans Day — Wednesday, November 11, 2026 (CLOSED)
-- Thanksgiving — Thursday & Friday, November 26–27, 2026
-- Winter Break — December 24, 2026 through January 1, 2027
-- Martin Luther King Jr. Day — Monday, January 18, 2027
-- Memorial Day — Monday, May 31, 2027
-- Staff Development Days — Friday, October 9, 2026 and Friday, February 12, 2027 (CLOSED, no childcare)
-- Independence Day — Monday, July 5, 2027
+- Labor Day: Monday, September 7, 2026
+- Veterans Day: Wednesday, November 11, 2026 (CLOSED)
+- Thanksgiving: Thursday & Friday, November 26–27, 2026
+- Winter Break: December 24, 2026 through January 1, 2027
+- Martin Luther King Jr. Day: Monday, January 18, 2027
+- Memorial Day: Monday, May 31, 2027
+- Staff Development Days: Friday, October 9, 2026 and Friday, February 12, 2027 (CLOSED, no childcare)
+- Independence Day: Monday, July 5, 2027
 
 Tuition is not reduced for holiday closures; these days are built into the annual tuition rate.
 We remain OPEN on Columbus Day, Presidents' Day, and Halloween.`,
@@ -49,10 +49,10 @@ We remain OPEN on Columbus Day, Presidents' Day, and Halloween.`,
     updatedAt: STAMP,
     body: `Weekly tuition, billed every Monday:
 
-- Infants (6 weeks – 17 months): $385/week
-- Toddlers (18 months – 2 years): $340/week
-- Preschool (3 – 4 years): $295/week
-- Pre-K (4 – 5 years): $275/week
+- Infants (6 weeks to 17 months): $385/week
+- Toddlers (18 months to 2 years): $340/week
+- Preschool (3 to 4 years): $295/week
+- Pre-K (4 to 5 years): $275/week
 
 Part-time (3 days/week) is available for Preschool and Pre-K only at 70% of the full-time rate.
 
@@ -107,7 +107,7 @@ Emergency medication (EpiPen, inhaler, Diastat) requires an individual Health Ca
     updatedAt: STAMP,
     body: `Sunny Sprouts provides a hot lunch plus a morning and afternoon snack, included in tuition. Families do NOT need to pack lunch.
 
-If you forget to pack anything, we always have a meal for your child — just let a teacher know at drop-off. There is no extra charge.
+If you forget to pack anything, we always have a meal for your child, so just let a teacher know at drop-off. There is no extra charge.
 
 Rotating two-week menu, current week:
 - Monday: Turkey & cheese roll-ups, steamed carrots, apple slices, milk
@@ -148,7 +148,7 @@ Current waitlist as of August 2026: Infant room approximately 3 months, Toddler 
 
 If you know you will be late, call (512) 555-0134 as soon as possible so we can reassure your child.
 
-Anyone picking up must be listed on your child's Authorized Pickup list and must show photo ID. We will not release a child to an adult who is not on the list, even if the parent calls to authorize it — the list must be updated in writing through the brightwheel app.
+Anyone picking up must be listed on your child's Authorized Pickup list and must show photo ID. We will not release a child to an adult who is not on the list, even if the parent calls to authorize it. The list has to be updated in writing through the brightwheel app.
 
 After three late pickups in a rolling month, Ms. Rivera will schedule a conversation about scheduling options.`,
   },
@@ -163,7 +163,7 @@ After three late pickups in a rolling month, Ms. Rivera will schedule a conversa
 - Diapers and wipes for children not yet potty trained
 - A crib sheet and small blanket for nap (sent home Fridays to wash)
 - A refillable water bottle
-- Weather-appropriate outerwear — we go outside every day unless it is below 40°F or raining
+- Weather-appropriate outerwear, since we go outside every day unless it is below 40°F or raining
 
 Please leave at home: toys from home, jewelry, anything with peanuts or tree nuts, and open-toed shoes or flip-flops.
 
@@ -179,10 +179,10 @@ Sunscreen is applied by staff with a signed permission form. We supply it, or yo
 Phone: (512) 555-0134
 Email: hello@sunnysprouts.example
 
-Director: Ms. Rivera — enrollment, tuition questions, concerns about your child, and anything urgent.
-Assistant Director: Mr. Chen — daily schedules, classroom placement, and staffing.
+Director: Ms. Rivera handles enrollment, tuition questions, concerns about your child, and anything urgent.
+Assistant Director: Mr. Chen handles daily schedules, classroom placement, and staffing.
 
-The fastest way to reach a teacher during the day is a message through the brightwheel app. For anything urgent, please call — we answer the phone between 7:00 AM and 6:00 PM.`,
+The fastest way to reach a teacher during the day is a message through the brightwheel app. For anything urgent, please call. We answer the phone between 7:00 AM and 6:00 PM.`,
   },
 ];
 
@@ -204,7 +204,7 @@ export const SEED_LOG: QuestionLogItem[] = [
     id: "log-2",
     question: "What is the tuition for infants?",
     answer:
-      "Infant tuition (6 weeks–17 months) is $385 per week, billed each Monday through the brightwheel app.",
+      "Infant tuition (6 weeks to 17 months) is $385 per week, billed each Monday through the brightwheel app.",
     status: "answered",
     sourceId: "tuition",
     askedAt: "2026-08-15T15:04:00.000Z",
@@ -222,7 +222,7 @@ export const SEED_LOG: QuestionLogItem[] = [
     id: "log-4",
     question: "I forgot to pack lunch. Can you provide lunch today and what is it?",
     answer:
-      "Lunch is always included — no need to pack. Today is cheese quesadilla, black beans, and orange wedges.",
+      "Lunch is always included, so no need to pack. Today is cheese quesadilla, black beans, and orange wedges.",
     status: "answered",
     sourceId: "lunch",
     askedAt: "2026-08-16T07:52:00.000Z",
@@ -241,7 +241,7 @@ export const SEED_LOG: QuestionLogItem[] = [
     question:
       "Miles fell off the climber yesterday and hit his head. He seems okay but is a little sleepy. Should I keep him home?",
     answer:
-      "Passed to Ms. Rivera — head injury follow-up is a medical judgment the front desk should not make.",
+      "Passed to Ms. Rivera. Head injury follow-up is a medical judgment the front desk should not make.",
     status: "escalated",
     sourceId: null,
     askedAt: "2026-08-16T06:30:00.000Z",
@@ -267,7 +267,7 @@ export const SEED_LOG: QuestionLogItem[] = [
 export const SUGGESTED_QUESTIONS = [
   "Are you open on Veterans Day?",
   "What is the tuition for infants?",
-  "My child has a fever — can they come in?",
+  "My child has a fever, can they come in?",
   "I forgot to pack lunch. What's for lunch today?",
   "How can I schedule a tour?",
 ];

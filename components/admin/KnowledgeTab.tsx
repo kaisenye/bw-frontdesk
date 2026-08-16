@@ -67,26 +67,36 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
     setConfirmingDeleteId(null);
   }
 
-  const filterChip =
-    "inline-flex min-h-[36px] items-center rounded-full border px-3.5 text-[13px] font-semibold transition";
+  const rowAction =
+    "inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color,border-color] duration-[140ms] [transition-timing-function:var(--ease)]";
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1">
-          <label
-            htmlFor="kb-search"
-            className="block text-[11px] font-semibold tracking-[0.08em] text-stone-500 uppercase"
-          >
+    <div className="flex flex-col gap-4">
+      {/* Toolbar: search and the one primary action, on a single dense line. */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <label htmlFor="kb-search" className="sr-only">
             Search the knowledge base
           </label>
+          <svg
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          >
+            <circle cx="9" cy="9" r="5.5" />
+            <path d="m13.5 13.5 3.5 3.5" />
+          </svg>
           <input
             id="kb-search"
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search titles and answers…"
-            className="mt-1.5 min-h-[44px] w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-[15px] text-stone-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25"
+            placeholder="Search titles and answers"
+            className="min-h-[44px] w-full rounded-[var(--radius)] border border-line bg-surface pr-2.5 pl-8 text-[13px] text-ink outline-none transition-[border-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-line-strong focus:border-[var(--border-focus)]"
           />
         </div>
         <button
@@ -95,53 +105,55 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
             setCreating(true);
             setEditingId(null);
           }}
-          className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:outline-none sm:self-end"
+          className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius)] bg-accent px-3.5 text-[13px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover"
         >
-          <span aria-hidden="true" className="text-base leading-none">
-            +
-          </span>
+          <svg
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M10 4.5v11M4.5 10h11" />
+          </svg>
           New entry
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
-        <button
-          type="button"
+      {/* Category filter reads as one control strip, not a field of pills. */}
+      <div
+        className="-mx-1 flex flex-wrap items-center gap-x-1 gap-y-0.5 px-1"
+        role="group"
+        aria-label="Filter by category"
+      >
+        <FilterTab
+          active={categoryFilter === "all"}
           onClick={() => setCategoryFilter("all")}
-          aria-pressed={categoryFilter === "all"}
-          className={`${filterChip} ${
-            categoryFilter === "all"
-              ? "border-stone-800 bg-stone-800 text-white"
-              : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
-          }`}
-        >
-          All ({entries.length})
-        </button>
+          label="All"
+          count={entries.length}
+        />
         {CATEGORIES.map((cat) => {
           const count = entries.filter((e) => e.category === cat).length;
           if (count === 0) return null;
-          const active = categoryFilter === cat;
           return (
-            <button
+            <FilterTab
               key={cat}
-              type="button"
+              active={categoryFilter === cat}
               onClick={() => setCategoryFilter(cat)}
-              aria-pressed={active}
-              className={`${filterChip} ${
-                active
-                  ? "border-stone-800 bg-stone-800 text-white"
-                  : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
-              }`}
-            >
-              {CATEGORY_LABEL[cat]} ({count})
-            </button>
+              label={CATEGORY_LABEL[cat]}
+              count={count}
+            />
           );
         })}
       </div>
 
       {creating ? (
-        <section className="rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 p-5 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold text-stone-900">New knowledge entry</h2>
+        <section className="rounded-[var(--radius-lg)] border border-accent-border bg-surface p-4">
+          <h2 className="mb-3.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-ink">
+            New knowledge entry
+          </h2>
           <EntryEditor
             initial={NEW_DRAFT}
             submitLabel="Save entry"
@@ -152,11 +164,13 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-stone-300 bg-white px-5 py-10 text-center text-sm text-stone-500">
-          No entries match that search.
+        <p className="rounded-[var(--radius-lg)] border border-dashed border-line-strong bg-surface px-4 py-12 text-center text-[13px] text-ink-muted">
+          Nothing matches that search. Try a shorter word.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3.5">
+        /* One bordered container, hairline-divided rows. Reads as a list, not a
+           stack of cards. */
+        <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface">
           {visible.map((entry) => {
             const isEditing = editingId === entry.id;
             const isConfirming = confirmingDeleteId === entry.id;
@@ -165,13 +179,13 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
             return (
               <li
                 key={entry.id}
-                className={`rounded-2xl border bg-white p-5 shadow-sm transition ${
-                  justSaved ? "border-emerald-400 ring-2 ring-emerald-500/20" : "border-stone-200"
+                className={`group px-4 py-3 transition-colors duration-[140ms] [transition-timing-function:var(--ease)] ${
+                  isEditing ? "bg-surface-sunken" : justSaved ? "bg-accent-quiet" : "hover:bg-surface-hover"
                 }`}
               >
                 {isEditing ? (
                   <>
-                    <h3 className="mb-4 text-base font-semibold text-stone-900">
+                    <h3 className="mb-3.5 font-display text-[13px] font-semibold tracking-[-0.01em] text-ink">
                       Editing “{entry.title}”
                     </h3>
                     <EntryEditor
@@ -186,74 +200,73 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
                     />
                   </>
                 ) : (
-                  <>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold text-stone-900">
-                            {entry.title}
-                          </h3>
-                          <CategoryBadge category={entry.category} />
-                          {entry.addedByOperator ? <OperatorBadge /> : null}
-                        </div>
-                        <p className="mt-1 text-xs text-stone-500">
-                          Updated {relativeTime(entry.updatedAt)}
-                        </p>
-                      </div>
-
-                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      {/* Tight grouping inside the record: title, tags, meta. */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <h3 className="text-[13px] font-semibold text-ink">{entry.title}</h3>
+                        <CategoryBadge category={entry.category} />
+                        {entry.addedByOperator ? <OperatorBadge /> : null}
                         {justSaved ? (
                           <span
                             role="status"
-                            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
+                            className="text-[11px] font-medium text-accent-text"
                           >
-                            <span aria-hidden="true">✅</span> Saved
+                            Saved
                           </span>
                         ) : null}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingId(entry.id);
-                            setCreating(false);
-                            setConfirmingDeleteId(null);
-                          }}
-                          className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-400/40 focus-visible:outline-none"
-                        >
-                          Edit
-                        </button>
-                        {isConfirming ? (
-                          <span className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(entry.id)}
-                              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-rose-700 px-4 text-sm font-semibold text-white transition hover:bg-rose-800 focus-visible:ring-2 focus-visible:ring-rose-500/40 focus-visible:outline-none"
-                            >
-                              Confirm delete
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmingDeleteId(null)}
-                              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
-                            >
-                              Keep
-                            </button>
-                          </span>
-                        ) : (
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed whitespace-pre-line text-ink-secondary">
+                        {entry.body}
+                      </p>
+                      <p className="mt-1 text-[12px] text-ink-muted">
+                        Updated {relativeTime(entry.updatedAt)}
+                      </p>
+                    </div>
+
+                    {/* Actions stay quiet until the row is hovered or focused. */}
+                    <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity duration-[140ms] [transition-timing-function:var(--ease)] sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                      {isConfirming ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(entry.id)}
+                            className={`${rowAction} bg-gap-quiet text-gap-text hover:bg-gap hover:text-white`}
+                          >
+                            Delete for good
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmingDeleteId(null)}
+                            className={`${rowAction} text-ink-secondary hover:bg-surface-sunken hover:text-ink`}
+                          >
+                            Keep
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(entry.id);
+                              setCreating(false);
+                              setConfirmingDeleteId(null);
+                            }}
+                            className={`${rowAction} text-ink-secondary hover:bg-surface-sunken hover:text-ink`}
+                          >
+                            Edit
+                          </button>
                           <button
                             type="button"
                             onClick={() => setConfirmingDeleteId(entry.id)}
-                            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800 focus-visible:ring-2 focus-visible:ring-rose-400/40 focus-visible:outline-none"
+                            className={`${rowAction} text-ink-muted hover:bg-gap-quiet hover:text-gap-text`}
                           >
                             Delete
                           </button>
-                        )}
-                      </div>
+                        </>
+                      )}
                     </div>
-
-                    <p className="mt-3 line-clamp-3 text-[15px] leading-relaxed whitespace-pre-line text-stone-600">
-                      {entry.body}
-                    </p>
-                  </>
+                  </div>
                 )}
               </li>
             );
@@ -261,5 +274,35 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
         </ul>
       )}
     </div>
+  );
+}
+
+function FilterTab({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] ${
+        active
+          ? "bg-surface-sunken text-ink"
+          : "text-ink-muted hover:bg-surface-hover hover:text-ink-secondary"
+      }`}
+    >
+      {label}
+      <span className={`tabular-nums ${active ? "text-ink-secondary" : "text-ink-muted"}`}>
+        {count}
+      </span>
+    </button>
   );
 }
