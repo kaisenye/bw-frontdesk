@@ -12,7 +12,17 @@ import {
 import { EscalationCard } from "@/components/EscalationCard";
 import { SourceChip } from "@/components/SourceChip";
 import { CENTER, SUGGESTED_QUESTIONS } from "@/lib/seed";
-import { addLogItem, ensureSeeded, getKnowledge, newId, subscribe } from "@/lib/store";
+import {
+  addLogItem,
+  clearThread,
+  ensureSeeded,
+  getEmptyThread,
+  getKnowledge,
+  getThreadSnapshot,
+  newId,
+  saveThread,
+  subscribe,
+} from "@/lib/store";
 import type { AnswerStatus, ChatMessage, ChatResponse, KnowledgeEntry } from "@/lib/types";
 
 function statusFor(response: ChatResponse): AnswerStatus {
@@ -46,9 +56,32 @@ function getServerKnowledgeSnapshot(): KnowledgeEntry[] {
 }
 
 export default function ParentChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  /** Live transcript. Empty until the parent asks something this page load. */
+  const [live, setLive] = useState<ChatMessage[] | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+
+  /**
+   * The saved transcript, read through the store so the first client render
+   * still matches the server's empty output. Once the parent sends a message,
+   * `live` takes over and this is no longer consulted.
+   */
+  const restored = useSyncExternalStore(
+    subscribe,
+    getThreadSnapshot,
+    getEmptyThread,
+  );
+
+  const messages = live ?? restored;
+  const setMessages = useCallback(
+    (update: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+      setLive((prev) => {
+        const base = prev ?? getThreadSnapshot();
+        return typeof update === "function" ? update(base) : update;
+      });
+    },
+    [],
+  );
 
   const knowledge = useSyncExternalStore(
     subscribe,
@@ -64,6 +97,13 @@ export default function ParentChatPage() {
   useEffect(() => {
     ensureSeeded();
   }, []);
+
+  // Persist only what this page load produced. `live` stays null until the
+  // parent sends something, so a fresh render never overwrites a saved thread.
+  useEffect(() => {
+    if (live === null) return;
+    saveThread(live);
+  }, [live]);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -129,6 +169,14 @@ export default function ParentChatPage() {
       busyRef.current = false;
       setBusy(false);
     }
+  }, [setMessages]);
+
+  const startOver = useCallback(() => {
+    clearThread();
+    // Empty array, not null: null would fall back to the restored snapshot.
+    setLive([]);
+    setDraft("");
+    inputRef.current?.focus();
   }, []);
 
   const retry = useCallback(
@@ -142,7 +190,7 @@ export default function ParentChatPage() {
       });
       void ask(question);
     },
-    [ask],
+    [ask, setMessages],
   );
 
   const showEmptyState = messages.length === 0;
@@ -186,6 +234,16 @@ export default function ParentChatPage() {
               Front desk
             </p>
           </div>
+
+          {messages.length > 0 ? (
+            <button
+              type="button"
+              onClick={startOver}
+              className="flex min-h-[44px] cursor-pointer items-center rounded-[var(--radius-soft)] px-3 text-[13px] font-medium text-ink-secondary transition-[color,background-color,transform] duration-200 [transition-timing-function:var(--ease-soft)] hover:bg-surface-hover hover:text-ink active:scale-[0.97]"
+            >
+              Start over
+            </button>
+          ) : null}
 
           <Link
             href="/admin"

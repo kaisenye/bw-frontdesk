@@ -1,10 +1,24 @@
 "use client";
 
 import { SEED_KNOWLEDGE, SEED_LOG } from "./seed";
-import type { KnowledgeEntry, QuestionLogItem } from "./types";
+import type { ChatMessage, KnowledgeEntry, QuestionLogItem } from "./types";
 
 const KB_KEY = "sunny-sprouts:kb:v1";
 const LOG_KEY = "sunny-sprouts:log:v1";
+const THREAD_KEY = "sunny-sprouts:thread:v1";
+
+/**
+ * A parent interrupted mid-question should come back to their thread, but a
+ * reviewer opening the demo tomorrow should not meet a stale conversation.
+ * sessionStorage splits that difference: it survives reload and navigation to
+ * the staff view, and clears when the tab closes.
+ */
+const THREAD_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+
+interface StoredThread {
+  savedAt: number;
+  messages: ChatMessage[];
+}
 
 /** Lets the chat page and the admin page react to each other's writes. */
 const EVENT = "sunny-sprouts:store-change";
@@ -104,6 +118,83 @@ export function resolveLogItem(logId: string, entryId: string) {
 export function resetDemo() {
   write(KB_KEY, SEED_KNOWLEDGE);
   write(LOG_KEY, SEED_LOG);
+  clearThread();
+}
+
+/**
+ * Reads the parent's in-progress conversation. Pending and failed bubbles are
+ * dropped on the way out: a request that was in flight when the page reloaded
+ * can never resolve, so restoring it would leave a spinner running forever.
+ */
+export function getThread(): ChatMessage[] {
+  if (!isBrowser()) return [];
+  try {
+    const raw = window.sessionStorage.getItem(THREAD_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as StoredThread;
+    if (!parsed || !Array.isArray(parsed.messages)) return [];
+    if (Date.now() - parsed.savedAt > THREAD_MAX_AGE_MS) {
+      window.sessionStorage.removeItem(THREAD_KEY);
+      return [];
+    }
+    return parsed.messages.filter((m) => !m.pending && !m.error);
+  } catch {
+    return [];
+  }
+}
+
+export function saveThread(messages: ChatMessage[]) {
+  if (!isBrowser()) return;
+  try {
+    const keep = messages.filter((m) => !m.pending && !m.error);
+    if (keep.length === 0) {
+      window.sessionStorage.removeItem(THREAD_KEY);
+      return;
+    }
+    const payload: StoredThread = { savedAt: Date.now(), messages: keep };
+    window.sessionStorage.setItem(THREAD_KEY, JSON.stringify(payload));
+    window.dispatchEvent(new CustomEvent(EVENT, { detail: { key: THREAD_KEY } }));
+  } catch {
+    // Quota or private-mode failure: the in-memory transcript still works.
+  }
+}
+
+const EMPTY_THREAD: ChatMessage[] = [];
+let threadSnapshot: ChatMessage[] = EMPTY_THREAD;
+let threadRaw: string | null = null;
+
+/**
+ * Snapshot of the saved transcript for useSyncExternalStore, which is how the
+ * chat page reads it without tripping hydration: the server snapshot is empty
+ * and the real one arrives after mount. Cached against the serialized value so
+ * the reference stays stable between reads.
+ */
+export function getThreadSnapshot(): ChatMessage[] {
+  if (!isBrowser()) return EMPTY_THREAD;
+  let raw: string | null = null;
+  try {
+    raw = window.sessionStorage.getItem(THREAD_KEY);
+  } catch {
+    return EMPTY_THREAD;
+  }
+  if (raw !== threadRaw) {
+    threadRaw = raw;
+    threadSnapshot = getThread();
+  }
+  return threadSnapshot;
+}
+
+export function getEmptyThread(): ChatMessage[] {
+  return EMPTY_THREAD;
+}
+
+export function clearThread() {
+  if (!isBrowser()) return;
+  try {
+    window.sessionStorage.removeItem(THREAD_KEY);
+  } catch {
+    // Nothing to do; the caller only wants the thread gone.
+  }
 }
 
 export function newId(prefix: string) {
