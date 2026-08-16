@@ -1,0 +1,111 @@
+"use client";
+
+import { SEED_KNOWLEDGE, SEED_LOG } from "./seed";
+import type { KnowledgeEntry, QuestionLogItem } from "./types";
+
+const KB_KEY = "sunny-sprouts:kb:v1";
+const LOG_KEY = "sunny-sprouts:log:v1";
+
+/** Lets the chat page and the admin page react to each other's writes. */
+const EVENT = "sunny-sprouts:store-change";
+
+function isBrowser() {
+  return typeof window !== "undefined";
+}
+
+function read<T>(key: string, fallback: T): T {
+  if (!isBrowser()) return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function write<T>(key: string, value: T) {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+    window.dispatchEvent(new CustomEvent(EVENT, { detail: { key } }));
+  } catch {
+    // Quota or private-mode failure: the in-memory UI state still works.
+  }
+}
+
+export function subscribe(listener: () => void) {
+  if (!isBrowser()) return () => {};
+  const handler = () => listener();
+  window.addEventListener(EVENT, handler);
+  window.addEventListener("storage", handler);
+  return () => {
+    window.removeEventListener(EVENT, handler);
+    window.removeEventListener("storage", handler);
+  };
+}
+
+/** Seeds on first visit so a reviewer never lands on an empty demo. */
+export function ensureSeeded() {
+  if (!isBrowser()) return;
+  if (window.localStorage.getItem(KB_KEY) === null) {
+    write(KB_KEY, SEED_KNOWLEDGE);
+  }
+  if (window.localStorage.getItem(LOG_KEY) === null) {
+    write(LOG_KEY, SEED_LOG);
+  }
+}
+
+export function getKnowledge(): KnowledgeEntry[] {
+  return read<KnowledgeEntry[]>(KB_KEY, SEED_KNOWLEDGE);
+}
+
+export function saveEntry(entry: KnowledgeEntry) {
+  const all = getKnowledge();
+  const index = all.findIndex((e) => e.id === entry.id);
+  const next = { ...entry, updatedAt: new Date().toISOString() };
+  if (index >= 0) {
+    all[index] = next;
+  } else {
+    all.push(next);
+  }
+  write(KB_KEY, all);
+  return next;
+}
+
+export function deleteEntry(id: string) {
+  write(
+    KB_KEY,
+    getKnowledge().filter((e) => e.id !== id),
+  );
+}
+
+export function getLog(): QuestionLogItem[] {
+  return read<QuestionLogItem[]>(LOG_KEY, SEED_LOG);
+}
+
+export function addLogItem(item: QuestionLogItem) {
+  write(LOG_KEY, [item, ...getLog()]);
+}
+
+/** Marks a gap as closed once an operator writes the missing entry. */
+export function resolveLogItem(logId: string, entryId: string) {
+  write(
+    LOG_KEY,
+    getLog().map((item) =>
+      item.id === logId
+        ? { ...item, status: "answered" as const, sourceId: entryId, resolvedByEntryId: entryId }
+        : item,
+    ),
+  );
+}
+
+export function resetDemo() {
+  write(KB_KEY, SEED_KNOWLEDGE);
+  write(LOG_KEY, SEED_LOG);
+}
+
+export function newId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+}
