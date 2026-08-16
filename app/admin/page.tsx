@@ -5,7 +5,14 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { InboxTab } from "@/components/admin/InboxTab";
 import { KnowledgeTab } from "@/components/admin/KnowledgeTab";
 import { CENTER } from "@/lib/seed";
-import { ensureSeeded, getKnowledge, getLog, resetDemo, subscribe } from "@/lib/store";
+import {
+  ensureSeeded,
+  getKnowledge,
+  getLog,
+  needsAttention,
+  resetDemo,
+  subscribe,
+} from "@/lib/store";
 
 type Tab = "knowledge" | "inbox";
 
@@ -66,9 +73,7 @@ export default function AdminPage() {
   // effect fills the store immediately after hydration.
   const ready = entries.length > 0 || log.length > 0;
 
-  const needsAttention = log.filter(
-    (i) => i.status === "escalated" || i.status === "gap",
-  ).length;
+  const attentionCount = log.filter(needsAttention).length;
 
   function handleReset() {
     resetDemo();
@@ -127,12 +132,12 @@ export default function AdminPage() {
               id="tab-inbox"
             >
               Inbox
-              {needsAttention > 0 ? (
+              {attentionCount > 0 ? (
                 <span
                   className="tabular-nums text-gap-text"
-                  title={`${needsAttention} need attention`}
+                  title={`${attentionCount} need attention`}
                 >
-                  {needsAttention}
+                  {attentionCount}
                 </span>
               ) : (
                 <TabCount active={tab === "inbox"}>{log.length}</TabCount>

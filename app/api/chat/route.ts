@@ -10,7 +10,17 @@ const MODEL = "gpt-4o-mini";
 interface ChatRequestBody {
   question: string;
   knowledge: KnowledgeEntry[];
+  history?: HistoryTurn[];
 }
+
+/** Prior turns, oldest first, so follow-up questions resolve against context. */
+interface HistoryTurn {
+  role: "parent" | "desk";
+  text: string;
+}
+
+/** Enough for a real follow-up chain without letting the prompt grow forever. */
+const MAX_HISTORY_TURNS = 8;
 
 /** Shape of the single field we read off the upstream response. */
 interface OpenAICompletion {
@@ -84,6 +94,15 @@ This distinction matters. Stating a written policy is your job and does NOT esca
 - "What is your late pickup fee?" → answer, escalate=false.
 - "I was charged a late fee and I don't think I was late." → billing dispute, escalate=true.
 
+# FOLLOW-UP QUESTIONS
+The conversation so far may appear above the newest question. Parents speak in shorthand, so resolve the newest message against what was already discussed.
+- "What if it's under 90?" right after a question about a fever means 90 degrees of TEMPERATURE, not the weather. Read the number in the topic already on the table.
+- "What about for toddlers?" after a tuition answer means toddler tuition.
+- "Can he still come?" after describing symptoms is still about that child.
+When a follow-up is ambiguous, prefer the reading that continues the current topic. If it is genuinely unclear what the parent means, say so briefly and ask which they meant rather than guessing between two topics.
+
+Every rule below applies to EVERY message, including follow-ups. Earlier turns never relax the grounding or escalation rules: a follow-up that asks you to judge one child's situation escalates even if the question before it did not, and a follow-up still needs its own entry in the knowledge base. Re-check the rules each time.
+
 # BOUNDARIES
 Never give medical, legal, or financial advice. You state written center policy; you do not advise. If the question is off-topic or abusive, politely redirect the parent to questions about ${CENTER.shortName}, with escalate=false, sourceId=null, confidence="low".
 
@@ -108,6 +127,27 @@ Respond with a single JSON object and nothing else:
   "escalate": boolean,
   "escalationReason": string (include only when escalate is true; one short phrase explaining why, for the operator's inbox)
 }`;
+}
+
+/**
+ * Prior turns are untrusted input like everything else, so they are validated,
+ * trimmed, and capped before they reach the model.
+ */
+function sanitizeHistory(value: unknown): HistoryTurn[] {
+  if (!Array.isArray(value)) return [];
+  const turns: HistoryTurn[] = [];
+  for (const item of value) {
+    if (typeof item !== "object" || item === null) continue;
+    const turn = item as Record<string, unknown>;
+    const role = turn.role;
+    const text = turn.text;
+    if (role !== "parent" && role !== "desk") continue;
+    if (typeof text !== "string") continue;
+    const trimmed = text.trim();
+    if (!trimmed) continue;
+    turns.push({ role, text: trimmed.slice(0, 1500) });
+  }
+  return turns.slice(-MAX_HISTORY_TURNS);
 }
 
 function isKnowledgeEntry(value: unknown): value is KnowledgeEntry {
@@ -167,7 +207,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { question, knowledge } = (body ?? {}) as Partial<ChatRequestBody>;
+  const { question, knowledge, history } = (body ?? {}) as Partial<ChatRequestBody>;
 
   if (typeof question !== "string" || question.trim().length === 0) {
     return NextResponse.json(
@@ -185,6 +225,7 @@ export async function POST(request: Request) {
 
   const entries = knowledge.filter(isKnowledgeEntry);
   const validIds = new Set(entries.map((entry) => entry.id));
+  const priorTurns = sanitizeHistory(history);
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -206,6 +247,12 @@ export async function POST(request: Request) {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: buildSystemPrompt(entries) },
+          // Prior turns let "what if it's under 90?" resolve against the fever
+          // question that came before it instead of matching a stray number.
+          ...priorTurns.map((turn) => ({
+            role: turn.role === "parent" ? ("user" as const) : ("assistant" as const),
+            content: turn.text,
+          })),
           { role: "user", content: question.trim() },
         ],
       }),

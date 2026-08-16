@@ -28,6 +28,12 @@ export interface QuestionLogItem {
   askedAt: string;
   /** Set once an operator closes a gap by writing a knowledge entry. */
   resolvedByEntryId?: string;
+  /**
+   * Set when an operator confirms they have handled an escalation. The item
+   * stays "escalated" (it was routed to a person, and that is a fact about what
+   * happened) but drops out of the needs-attention queue.
+   */
+  reviewedAt?: string;
 }
 
 export interface ChatResponse {

@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { newId, resolveLogItem, saveEntry } from "@/lib/store";
+import {
+  markLogItemReviewed,
+  needsAttention,
+  newId,
+  resolveLogItem,
+  saveEntry,
+} from "@/lib/store";
 import type { KnowledgeEntry, QuestionLogItem } from "@/lib/types";
 import { EntryEditor, type EntryDraft } from "./EntryEditor";
 import { Modal } from "./Modal";
@@ -68,7 +74,6 @@ export function InboxTab({ log, entries }: InboxTabProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composingId, setComposingId] = useState<string | null>(null);
   const [justResolvedId, setJustResolvedId] = useState<string | null>(null);
-  const [reviewedIds, setReviewedIds] = useState<string[]>([]);
   // Mobile only: which pane the operator is looking at right now.
   const [mobileView, setMobileView] = useState<"list" | "detail">("list");
 
@@ -98,16 +103,17 @@ export function InboxTab({ log, entries }: InboxTabProps) {
   const visible = useMemo(
     () =>
       sorted.filter((item) => {
-        if (filter === "attention") {
-          return item.status === "escalated" || item.status === "gap";
-        }
+        if (filter === "attention") return needsAttention(item);
         if (filter === "answered") return item.status === "answered";
         return true;
       }),
     [sorted, filter],
   );
 
-  const attentionCount = stats.escalated + stats.gaps;
+  const attentionCount = useMemo(
+    () => sorted.filter(needsAttention).length,
+    [sorted],
+  );
 
   // Selection is derived, not synced. If the chosen row is still in the list it
   // stays put through log updates and filter changes; otherwise the top row
@@ -222,11 +228,11 @@ export function InboxTab({ log, entries }: InboxTabProps) {
                 source={selected.sourceId ? entryById.get(selected.sourceId) : undefined}
                 composing={composingId === selected.id}
                 celebrating={justResolvedId === selected.id}
-                reviewed={reviewedIds.includes(selected.id)}
+                reviewed={Boolean(selected.reviewedAt)}
                 onStartComposing={() => setComposingId(selected.id)}
                 onCancelComposing={stopComposing}
                 onSaveAnswer={(draft) => handleAnswerGap(selected, draft)}
-                onMarkReviewed={() => setReviewedIds((prev) => [...prev, selected.id])}
+                onMarkReviewed={() => markLogItemReviewed(selected.id)}
                 onBack={() => setMobileView("list")}
               />
             ) : (
@@ -272,7 +278,13 @@ function ConversationRow({
       <span
         aria-hidden="true"
         className={`absolute inset-y-0 left-0 w-0.5 ${
-          active ? "bg-accent" : item.status === "gap" ? "bg-gap" : item.status === "escalated" ? "bg-warn" : "bg-transparent"
+          active
+            ? "bg-accent"
+            : needsAttention(item)
+              ? item.status === "gap"
+                ? "bg-gap"
+                : "bg-warn"
+              : "bg-transparent"
         }`}
       />
 
@@ -288,7 +300,7 @@ function ConversationRow({
         </span>
       </div>
 
-      <StatusLine status={item.status} />
+      <StatusLine item={item} />
     </button>
   );
 }
@@ -299,9 +311,18 @@ const STATUS_TEXT = {
   gap: { label: "Needs an answer", dot: "bg-gap", text: "text-gap-text" },
 } as const;
 
+const REVIEWED_TEXT = {
+  label: "Reviewed by staff",
+  dot: "bg-ink-muted",
+  text: "text-ink-muted",
+} as const;
+
 /** Dot plus words, so the row never leans on color by itself. */
-function StatusLine({ status }: { status: QuestionLogItem["status"] }) {
-  const meta = STATUS_TEXT[status];
+function StatusLine({ item }: { item: QuestionLogItem }) {
+  const meta =
+    item.status === "escalated" && item.reviewedAt
+      ? REVIEWED_TEXT
+      : STATUS_TEXT[item.status];
   return (
     <span className={`inline-flex items-center gap-1.5 text-[12px] ${meta.text}`}>
       <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />

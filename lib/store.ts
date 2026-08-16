@@ -115,6 +115,29 @@ export function resolveLogItem(logId: string, entryId: string) {
   );
 }
 
+/**
+ * Still on the operator's plate: a gap needs an answer written, an escalation
+ * needs a person to follow up until one confirms they have. Lives here so the
+ * inbox filter and the tab badge cannot drift apart.
+ */
+export function needsAttention(item: QuestionLogItem): boolean {
+  if (item.status === "gap") return true;
+  return item.status === "escalated" && !item.reviewedAt;
+}
+
+/**
+ * Marks an escalation as handled. The status stays "escalated" because that is
+ * what happened to the question; only the needs-attention queue changes.
+ */
+export function markLogItemReviewed(logId: string) {
+  write(
+    LOG_KEY,
+    getLog().map((item) =>
+      item.id === logId ? { ...item, reviewedAt: new Date().toISOString() } : item,
+    ),
+  );
+}
+
 export function resetDemo() {
   write(KB_KEY, SEED_KNOWLEDGE);
   write(LOG_KEY, SEED_LOG);

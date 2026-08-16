@@ -93,6 +93,8 @@ export default function ParentChatPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   /** Kept in a ref so a retry can re-run without stale-closure surprises. */
   const busyRef = useRef(false);
+  /** Mirrors the transcript so `ask` can read history without depending on it. */
+  const messagesRef = useRef<ChatMessage[]>([]);
 
   useEffect(() => {
     ensureSeeded();
@@ -106,6 +108,7 @@ export default function ParentChatPage() {
   }, [live]);
 
   useEffect(() => {
+    messagesRef.current = messages;
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
@@ -124,6 +127,12 @@ export default function ParentChatPage() {
     setDraft("");
 
     const pendingId = newId("msg");
+    // Read before the optimistic append so the new question is not sent twice,
+    // once as history and once as the current turn.
+    const priorTurns = messagesRef.current
+      .filter((m) => !m.pending && !m.error && m.text.trim().length > 0)
+      .map((m) => ({ role: m.role, text: m.text }));
+
     setMessages((prev) => [
       ...prev,
       { id: newId("msg"), role: "parent", text: trimmed },
@@ -134,7 +143,11 @@ export default function ParentChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed, knowledge: getKnowledge() }),
+        body: JSON.stringify({
+          question: trimmed,
+          knowledge: getKnowledge(),
+          history: priorTurns,
+        }),
       });
 
       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
