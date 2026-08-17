@@ -2,6 +2,8 @@
 
 A prototype AI front desk for a daycare. Parents ask questions and get answers grounded in the center's own written policies; staff manage that source of truth and see what the front desk could not answer.
 
+**Live demo: [bw-frontdesk.vercel.app](https://bw-frontdesk.vercel.app/)**
+
 Two views: `/` for parents, `/admin` for staff.
 
 ## Architecture

@@ -1,6 +1,7 @@
 # AI Front Desk for Sunny Sprouts Learning Center
 
-**Live demo:** _[paste Vercel URL]_ · Parent view `/` · Staff view `/admin`
+**Live demo:** [bw-frontdesk.vercel.app](https://bw-frontdesk.vercel.app/) · Parent view `/` · Staff view `/admin`
+**Code:** [github.com/kaisenye/bw-frontdesk](https://github.com/kaisenye/bw-frontdesk)
 
 ## The problem I chose to solve
 
