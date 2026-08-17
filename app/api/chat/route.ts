@@ -5,7 +5,7 @@ import type { ChatResponse, KnowledgeEntry } from "@/lib/types";
 export const runtime = "nodejs";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-5.6-luna";
 
 interface ChatRequestBody {
   question: string;
@@ -267,7 +267,9 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0.2,
+        // No temperature: this model only accepts the default and rejects the
+        // request outright if one is sent. Grounding is enforced by the prompt
+        // and the server-side citation check rather than by sampling.
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: buildSystemPrompt(entries) },
