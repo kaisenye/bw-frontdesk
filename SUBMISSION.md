@@ -19,7 +19,7 @@ This distinction is the heart of the prompt. "What's your fever policy?" is a lo
 
 **3. Gaps are the product, not an error log.**
 
-When no entry covers a question, that's logged as a **knowledge gap**, and the operator dashboard turns it into a one-click "Answer this" that writes a new knowledge entry and marks the gap resolved. Write it once and the front desk handles it from there. That loop is why this gets *better* at a center instead of plateauing.
+When no entry covers a question, that's logged as a **knowledge gap**, and the operator dashboard turns it into a one-click "Answer this" that writes a new knowledge entry and marks the gap resolved. Write it once and the front desk handles it from there. That loop is why this gets _better_ at a center instead of plateauing.
 
 **4. The system drafts the answer it's missing, and refuses to invent the parts it doesn't know.**
 

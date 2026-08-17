@@ -4,10 +4,7 @@ import { useEffect, useState } from 'react'
 import type { DraftResponse, DraftResult, KnowledgeEntry } from '@/lib/types'
 
 type DraftState =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'ready'; draft: DraftResponse }
-  | { status: 'failed' }
+  { status: 'idle' } | { status: 'loading' } | { status: 'ready'; draft: DraftResponse } | { status: 'failed' }
 
 /**
  * Fetches a proposed entry for a gap once the composer opens. The modal opens

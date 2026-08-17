@@ -14,11 +14,11 @@ A question travels from the chat page to a Next.js API route, which sends the op
 
 **The trust gate is the point of the whole design.** The server checks that claimed `id` against the real knowledge base before anything reaches the parent, which produces three outcomes:
 
-| Outcome | When | What the parent sees |
-| --- | --- | --- |
-| Cited answer | The id resolves to a real entry | The answer plus a chip that expands the verbatim policy |
-| Escalated | Judgment about a specific child, billing, custody, safety | A card naming the director, with a tappable phone number |
-| Logged as gap | No entry covers the question | An honest "I don't have that on file", never a guess |
+| Outcome       | When                                                      | What the parent sees                                     |
+| ------------- | --------------------------------------------------------- | -------------------------------------------------------- |
+| Cited answer  | The id resolves to a real entry                           | The answer plus a chip that expands the verbatim policy  |
+| Escalated     | Judgment about a specific child, billing, custody, safety | A card naming the director, with a tappable phone number |
+| Logged as gap | No entry covers the question                              | An honest "I don't have that on file", never a guess     |
 
 A `sourceId` the model invents that does not match a real entry is dropped rather than trusted, and confidence is downgraded to low. A fabricated citation would be worse than no citation, since the entire value of the chip is that a parent can verify it.
 
@@ -37,6 +37,19 @@ The rule that makes a draft usable is that it may **never invent a specific**. N
 The phone number and the brightwheel app came from other entries. Everything the center hasn't decided is a bracket.
 
 Two failure postures, deliberately opposite. Chat never fails loudly, because a parent sees it. Drafting fails visibly, because the operator needs to know to write it themselves, and a fabricated policy is the one output this refuses to produce.
+
+## Formatting
+
+Prettier config is committed, and a pre-commit hook formats staged files so the
+repo stays consistent no matter which editor wrote the code. `npm install` wires
+the hook up; run `npm run hooks` to enable it by hand.
+
+```bash
+npm run format
+```
+
+The hook skips any file with unstaged edits on top of staged ones, rather than
+sweeping unreviewed work into the commit. Use `git commit --no-verify` to bypass.
 
 ## Evals
 

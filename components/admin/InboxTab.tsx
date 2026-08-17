@@ -1,68 +1,78 @@
-"use client";
+'use client'
 
-import { useCallback, useMemo, useState } from "react";
-import {
-  markLogItemReviewed,
-  needsAttention,
-  newId,
-  resolveLogItem,
-  saveEntry,
-} from "@/lib/store";
-import type { DraftResponse, KnowledgeEntry, QuestionLogItem } from "@/lib/types";
-import { EntryEditor, type EntryDraft } from "./EntryEditor";
-import { Modal } from "./Modal";
-import { useGapDraft } from "./useGapDraft";
-import { useToast } from "./Toaster";
-import { CategoryBadge, StatusBadge, relativeTime } from "./shared";
+import { useCallback, useMemo, useState } from 'react'
+import { markLogItemReviewed, needsAttention, newId, resolveLogItem, saveEntry } from '@/lib/store'
+import type { DraftResponse, KnowledgeEntry, QuestionLogItem } from '@/lib/types'
+import { EntryEditor, type EntryDraft } from './EntryEditor'
+import { Modal } from './Modal'
+import { useGapDraft } from './useGapDraft'
+import { useToast } from './Toaster'
+import { CategoryBadge, StatusBadge, relativeTime } from './shared'
 
 interface InboxTabProps {
-  log: QuestionLogItem[];
-  entries: KnowledgeEntry[];
+  log: QuestionLogItem[]
+  entries: KnowledgeEntry[]
 }
 
-type InboxFilter = "all" | "attention" | "answered";
+type InboxFilter = 'all' | 'attention' | 'answered'
 
 /** Leading filler that carries no meaning in a knowledge-base title. */
 const LEADING_FILLER =
-  /^(do|does|did|can|could|is|are|was|were|what|how|when|where|why|will|would|should|you|your|i|my|our|we|the|a|an|any|there)(?:'\w+)?\s+/i;
+  /^(do|does|did|can|could|is|are|was|were|what|how|when|where|why|will|would|should|you|your|i|my|our|we|the|a|an|any|there)(?:'\w+)?\s+/i
 
 /** Words that read as unfinished if a truncated title ends on them. */
 const DANGLING = new Set([
-  "for", "in", "on", "at", "to", "of", "with", "about", "from", "by",
-  "and", "or", "the", "a", "an", "any", "my", "your",
-]);
+  'for',
+  'in',
+  'on',
+  'at',
+  'to',
+  'of',
+  'with',
+  'about',
+  'from',
+  'by',
+  'and',
+  'or',
+  'the',
+  'a',
+  'an',
+  'any',
+  'my',
+  'your',
+])
 
-const MINOR = new Set(["for", "in", "on", "at", "to", "of", "with", "and", "or", "the", "a", "an"]);
+const MINOR = new Set(['for', 'in', 'on', 'at', 'to', 'of', 'with', 'and', 'or', 'the', 'a', 'an'])
 
 /**
  * Turns "Do you offer any summer camp for older siblings?" into
  * "Summer Camp for Older Siblings" as a starting title the operator can edit.
  */
 function suggestTitle(question: string): string {
-  let cleaned = question.replace(/[?.!]+\s*$/g, "").trim();
+  let cleaned = question.replace(/[?.!]+\s*$/g, '').trim()
 
   // Strip stacked filler ("What's your policy on…" -> "policy on…").
-  let previous: string;
+  let previous: string
   do {
-    previous = cleaned;
-    cleaned = cleaned.replace(LEADING_FILLER, "").trim();
-  } while (cleaned !== previous && cleaned.length > 0);
+    previous = cleaned
+    cleaned = cleaned.replace(LEADING_FILLER, '').trim()
+  } while (cleaned !== previous && cleaned.length > 0)
 
-  const source = cleaned.length > 0 ? cleaned : question.replace(/[?.!]+\s*$/g, "").trim();
+  const source = cleaned.length > 0 ? cleaned : question.replace(/[?.!]+\s*$/g, '').trim()
 
-  const words = source.split(/\s+/).slice(0, 6);
+  const words = source.split(/\s+/).slice(0, 6)
   // Never end on a preposition left hanging by the truncation above.
   while (words.length > 1 && DANGLING.has(words[words.length - 1].toLowerCase())) {
-    words.pop();
+    words.pop()
   }
 
   return words
     .map((word, index) => {
-      const lower = word.toLowerCase();
-      if (index > 0 && MINOR.has(lower)) return lower;
-      return lower.charAt(0).toUpperCase() + lower.slice(1);
+      const lower = word.toLowerCase()
+      if (index > 0 && MINOR.has(lower)) return lower
+      return lower.charAt(0).toUpperCase() + lower.slice(1)
     })
-    .join(" ");
+    .join(' ')
 }
 
 /**
@@ -72,97 +82,91 @@ function suggestTitle(question: string): string {
  * room for exactly one of them.
  */
 export function InboxTab({ log, entries }: InboxTabProps) {
-  const [filter, setFilter] = useState<InboxFilter>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [composingId, setComposingId] = useState<string | null>(null);
-  const [justResolvedId, setJustResolvedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InboxFilter>('all')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [composingId, setComposingId] = useState<string | null>(null)
+  const [justResolvedId, setJustResolvedId] = useState<string | null>(null)
   // Mobile only: which pane the operator is looking at right now.
-  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
-  const toast = useToast();
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list')
+  const toast = useToast()
 
   const sorted = useMemo(
-    () =>
-      log
-        .slice()
-        .sort((a, b) => new Date(b.askedAt).getTime() - new Date(a.askedAt).getTime()),
+    () => log.slice().sort((a, b) => new Date(b.askedAt).getTime() - new Date(a.askedAt).getTime()),
     [log],
-  );
+  )
 
   const stats = useMemo(() => {
     // Small talk is excluded from the denominator: a "thanks" is not a question
     // the front desk failed to answer, so counting it would understate the rate.
-    const questions = sorted.filter((i) => i.status !== "chitchat");
-    const total = questions.length;
-    const answered = questions.filter((i) => i.status === "answered").length;
-    const escalated = questions.filter((i) => i.status === "escalated").length;
-    const gaps = questions.filter((i) => i.status === "gap").length;
-    const answeredPct = total === 0 ? 0 : Math.round((answered / total) * 100);
-    return { total, answered, escalated, gaps, answeredPct };
-  }, [sorted]);
+    const questions = sorted.filter((i) => i.status !== 'chitchat')
+    const total = questions.length
+    const answered = questions.filter((i) => i.status === 'answered').length
+    const escalated = questions.filter((i) => i.status === 'escalated').length
+    const gaps = questions.filter((i) => i.status === 'gap').length
+    const answeredPct = total === 0 ? 0 : Math.round((answered / total) * 100)
+    return { total, answered, escalated, gaps, answeredPct }
+  }, [sorted])
 
   const entryById = useMemo(() => {
-    const map = new Map<string, KnowledgeEntry>();
-    for (const e of entries) map.set(e.id, e);
-    return map;
-  }, [entries]);
+    const map = new Map<string, KnowledgeEntry>()
+    for (const e of entries) map.set(e.id, e)
+    return map
+  }, [entries])
 
   const visible = useMemo(
     () =>
       sorted.filter((item) => {
-        if (filter === "attention") return needsAttention(item);
+        if (filter === 'attention') return needsAttention(item)
         // "Done" is the inverse of the queue, so a reviewed escalation lands
         // here rather than falling between the two filters.
-        if (filter === "answered") return !needsAttention(item);
-        return true;
+        if (filter === 'answered') return !needsAttention(item)
+        return true
       }),
     [sorted, filter],
-  );
+  )
 
-  const attentionCount = useMemo(
-    () => sorted.filter(needsAttention).length,
-    [sorted],
-  );
+  const attentionCount = useMemo(() => sorted.filter(needsAttention).length, [sorted])
 
   // Selection is derived, not synced. If the chosen row is still in the list it
   // stays put through log updates and filter changes; otherwise the top row
   // takes over, which is also the default on first paint.
-  const selected = visible.find((item) => item.id === selectedId) ?? visible[0];
+  const selected = visible.find((item) => item.id === selectedId) ?? visible[0]
 
   function handleSelect(id: string) {
-    setSelectedId(id);
-    setMobileView("detail");
-    if (composingId !== id) setComposingId(null);
+    setSelectedId(id)
+    setMobileView('detail')
+    if (composingId !== id) setComposingId(null)
   }
 
   function handleFilter(next: InboxFilter) {
-    setFilter(next);
-    setMobileView("list");
+    setFilter(next)
+    setMobileView('list')
   }
 
   // Stable identity: Modal takes onClose as an effect dependency.
-  const stopComposing = useCallback(() => setComposingId(null), []);
+  const stopComposing = useCallback(() => setComposingId(null), [])
 
   /** The improvement loop: write the missing entry, then close the gap it came from. */
   function handleAnswerGap(item: QuestionLogItem, draft: EntryDraft) {
     const entry: KnowledgeEntry = {
-      id: newId("kb"),
+      id: newId('kb'),
       title: draft.title,
       category: draft.category,
       body: draft.body,
       addedByOperator: true,
       updatedAt: new Date().toISOString(),
-    };
+    }
 
-    saveEntry(entry);
-    resolveLogItem(item.id, entry.id);
+    saveEntry(entry)
+    resolveLogItem(item.id, entry.id)
 
-    setComposingId(null);
-    setJustResolvedId(item.id);
-    toast(`Added “${draft.title}”. The front desk can answer this one now.`, "good");
+    setComposingId(null)
+    setJustResolvedId(item.id)
+    toast(`Added “${draft.title}”. The front desk can answer this one now.`, 'good')
 
     window.setTimeout(() => {
-      setJustResolvedId((current) => (current === item.id ? null : current));
-    }, 6000);
+      setJustResolvedId((current) => (current === item.id ? null : current))
+    }, 6000)
   }
 
   return (
@@ -174,7 +178,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
           {/* Left pane: the queue. */}
           <div
             className={`flex min-h-0 flex-1 flex-col md:w-[312px] md:flex-none md:border-r md:border-line ${
-              mobileView === "detail" ? "hidden md:flex" : "flex"
+              mobileView === 'detail' ? 'hidden md:flex' : 'flex'
             }`}
           >
             {/* Both panes' headers share this height so the two rules meet. */}
@@ -186,29 +190,29 @@ export function InboxTab({ log, entries }: InboxTabProps) {
               <FilterTab
                 label="All"
                 count={sorted.length}
-                active={filter === "all"}
-                onClick={() => handleFilter("all")}
+                active={filter === 'all'}
+                onClick={() => handleFilter('all')}
               />
               <FilterTab
                 label="Needs attention"
                 count={attentionCount}
-                active={filter === "attention"}
-                onClick={() => handleFilter("attention")}
+                active={filter === 'attention'}
+                onClick={() => handleFilter('attention')}
                 urgent={attentionCount > 0}
               />
               <FilterTab
                 label="Done"
                 count={sorted.length - attentionCount}
-                active={filter === "answered"}
-                onClick={() => handleFilter("answered")}
+                active={filter === 'answered'}
+                onClick={() => handleFilter('answered')}
               />
             </div>
 
             {visible.length === 0 ? (
               <p className="px-4 py-12 text-center text-[13px] text-ink-muted">
-                {filter === "attention"
+                {filter === 'attention'
                   ? "You're all caught up. The front desk handled everything."
-                  : "No questions here yet."}
+                  : 'No questions here yet.'}
               </p>
             ) : (
               <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto">
@@ -230,7 +234,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
               pane header can stay pinned above it. */}
           <div
             className={`min-h-0 flex-1 flex-col overflow-hidden bg-surface-sunken md:bg-surface ${
-              mobileView === "detail" ? "flex" : "hidden md:flex"
+              mobileView === 'detail' ? 'flex' : 'hidden md:flex'
             }`}
           >
             {selected ? (
@@ -246,17 +250,17 @@ export function InboxTab({ log, entries }: InboxTabProps) {
                 onCancelComposing={stopComposing}
                 onSaveAnswer={(draft) => handleAnswerGap(selected, draft)}
                 onMarkReviewed={() => {
-                  markLogItemReviewed(selected.id);
-                  toast("Marked reviewed. It's out of your queue.");
+                  markLogItemReviewed(selected.id)
+                  toast("Marked reviewed. It's out of your queue.")
                 }}
-                onBack={() => setMobileView("list")}
+                onBack={() => setMobileView('list')}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center px-6 py-16">
                 <p className="max-w-[26ch] text-center text-[13px] text-ink-muted">
                   {stats.total === 0
-                    ? "Nothing has come in yet. Parent questions land here as they get asked."
-                    : "Pick a question on the left to see the details."}
+                    ? 'Nothing has come in yet. Parent questions land here as they get asked.'
+                    : 'Pick a question on the left to see the details.'}
                 </p>
               </div>
             )}
@@ -264,29 +268,21 @@ export function InboxTab({ log, entries }: InboxTabProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 /**
  * One row in the queue. The question is the subject line, clamped to two lines,
  * with a status dot and a relative timestamp riding along as metadata.
  */
-function ConversationRow({
-  item,
-  active,
-  onSelect,
-}: {
-  item: QuestionLogItem;
-  active: boolean;
-  onSelect: () => void;
-}) {
+function ConversationRow({ item, active, onSelect }: { item: QuestionLogItem; active: boolean; onSelect: () => void }) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      aria-current={active ? "true" : undefined}
+      aria-current={active ? 'true' : undefined}
       className={`relative flex w-full min-h-[44px] cursor-pointer flex-col gap-1 px-3 py-2.5 text-left transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] ${
-        active ? "bg-accent-quiet" : "hover:bg-surface-hover"
+        active ? 'bg-accent-quiet' : 'hover:bg-surface-hover'
       }`}
     >
       {/* A hairline rail carries status at the row edge, so the eye can scan the
@@ -295,19 +291,19 @@ function ConversationRow({
         aria-hidden="true"
         className={`absolute inset-y-0 left-0 w-0.5 ${
           active
-            ? "bg-accent"
+            ? 'bg-accent'
             : needsAttention(item)
-              ? item.status === "gap"
-                ? "bg-gap"
-                : "bg-warn"
-              : "bg-transparent"
+              ? item.status === 'gap'
+                ? 'bg-gap'
+                : 'bg-warn'
+              : 'bg-transparent'
         }`}
       />
 
       <div className="flex items-start justify-between gap-2">
         <p
           className="min-w-0 flex-1 overflow-hidden text-[13px] leading-snug font-medium text-ink"
-          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
         >
           {item.question}
         </p>
@@ -318,34 +314,31 @@ function ConversationRow({
 
       <StatusLine item={item} />
     </button>
-  );
+  )
 }
 
 const STATUS_TEXT = {
-  answered: { label: "Answered", dot: "bg-accent", text: "text-ink-muted" },
-  escalated: { label: "Sent to staff", dot: "bg-warn", text: "text-warn-text" },
-  gap: { label: "Needs an answer", dot: "bg-gap", text: "text-gap-text" },
-  chitchat: { label: "Just saying hi", dot: "bg-ink-muted", text: "text-ink-muted" },
-} as const;
+  answered: { label: 'Answered', dot: 'bg-accent', text: 'text-ink-muted' },
+  escalated: { label: 'Sent to staff', dot: 'bg-warn', text: 'text-warn-text' },
+  gap: { label: 'Needs an answer', dot: 'bg-gap', text: 'text-gap-text' },
+  chitchat: { label: 'Just saying hi', dot: 'bg-ink-muted', text: 'text-ink-muted' },
+} as const
 
 const REVIEWED_TEXT = {
-  label: "Reviewed by staff",
-  dot: "bg-ink-muted",
-  text: "text-ink-muted",
-} as const;
+  label: 'Reviewed by staff',
+  dot: 'bg-ink-muted',
+  text: 'text-ink-muted',
+} as const
 
 /** Dot plus words, so the row never leans on color by itself. */
 function StatusLine({ item }: { item: QuestionLogItem }) {
-  const meta =
-    item.status === "escalated" && item.reviewedAt
-      ? REVIEWED_TEXT
-      : STATUS_TEXT[item.status];
+  const meta = item.status === 'escalated' && item.reviewedAt ? REVIEWED_TEXT : STATUS_TEXT[item.status]
   return (
     <span className={`inline-flex items-center gap-1.5 text-[12px] ${meta.text}`}>
       <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
       {meta.label}
     </span>
-  );
+  )
 }
 
 /**
@@ -356,9 +349,7 @@ function StatusLine({ item }: { item: QuestionLogItem }) {
 function DraftNotice({ draft }: { draft: DraftResponse }) {
   return (
     <section className="shrink-0 rounded-[var(--radius)] border border-accent-border bg-accent-quiet px-3 py-2.5">
-      <h3 className="text-[12px] font-medium text-accent-text">
-        Suggested draft, written from your other entries
-      </h3>
+      <h3 className="text-[12px] font-medium text-accent-text">Suggested draft, written from your other entries</h3>
       <p className="mt-1 text-[12px] leading-snug text-accent-text/80">
         Read it before you save. Parents will see this word for word.
       </p>
@@ -370,10 +361,7 @@ function DraftNotice({ draft }: { draft: DraftResponse }) {
           </h4>
           <ul className="mt-1 flex flex-col gap-1">
             {draft.assumptions.map((note) => (
-              <li
-                key={note}
-                className="flex gap-1.5 text-[12px] leading-snug text-ink-secondary"
-              >
+              <li key={note} className="flex gap-1.5 text-[12px] leading-snug text-ink-secondary">
                 <span aria-hidden="true" className="text-accent-text">
                   •
                 </span>
@@ -384,22 +372,22 @@ function DraftNotice({ draft }: { draft: DraftResponse }) {
         </>
       ) : null}
     </section>
-  );
+  )
 }
 
 interface DetailPaneProps {
-  item: QuestionLogItem;
-  source: KnowledgeEntry | undefined;
+  item: QuestionLogItem
+  source: KnowledgeEntry | undefined
   /** The whole knowledge base, sent along so a gap draft can be grounded in it. */
-  entries: KnowledgeEntry[];
-  composing: boolean;
-  celebrating: boolean;
-  reviewed: boolean;
-  onStartComposing: () => void;
-  onCancelComposing: () => void;
-  onSaveAnswer: (draft: EntryDraft) => void;
-  onMarkReviewed: () => void;
-  onBack: () => void;
+  entries: KnowledgeEntry[]
+  composing: boolean
+  celebrating: boolean
+  reviewed: boolean
+  onStartComposing: () => void
+  onCancelComposing: () => void
+  onSaveAnswer: (draft: EntryDraft) => void
+  onMarkReviewed: () => void
+  onBack: () => void
 }
 
 function DetailPane({
@@ -415,16 +403,16 @@ function DetailPane({
   onMarkReviewed,
   onBack,
 }: DetailPaneProps) {
-  const draftState = useGapDraft(item.question, entries, composing && item.status === "gap");
+  const draftState = useGapDraft(item.question, entries, composing && item.status === 'gap')
   /** Set once the operator types, so an arriving draft never eats their work. */
-  const [editorDirty, setEditorDirty] = useState(false);
+  const [editorDirty, setEditorDirty] = useState(false)
   /** Set when the operator accepts a draft that landed after they started typing. */
-  const [draftAccepted, setDraftAccepted] = useState(false);
+  const [draftAccepted, setDraftAccepted] = useState(false)
 
-  const draft = draftState.status === "ready" ? draftState.draft : null;
+  const draft = draftState.status === 'ready' ? draftState.draft : null
   // Applied silently while the editor is untouched, by request once it is not.
-  const applied = draft !== null && (!editorDirty || draftAccepted);
-  const offerDraft = draft !== null && editorDirty && !draftAccepted;
+  const applied = draft !== null && (!editorDirty || draftAccepted)
+  const offerDraft = draft !== null && editorDirty && !draftAccepted
 
   const initialDraft: EntryDraft = applied
     ? {
@@ -432,11 +420,11 @@ function DetailPane({
         category: draft.category,
         body: draft.body,
       }
-    : { title: suggestTitle(item.question), category: "policies", body: "" };
+    : { title: suggestTitle(item.question), category: 'policies', body: '' }
 
   // Remounting is the only way to push new values into EntryEditor, which holds
   // its own state after mount. The key flips exactly once, when a draft applies.
-  const editorKey = applied ? "drafted" : "blank";
+  const editorKey = applied ? 'drafted' : 'blank'
 
   return (
     <article className="flex min-h-0 flex-1 flex-col bg-surface">
@@ -465,9 +453,7 @@ function DetailPane({
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 md:justify-between">
           <StatusBadge status={item.status} />
-          <span className="shrink-0 text-[12px] text-ink-muted tabular-nums">
-            Asked {relativeTime(item.askedAt)}
-          </span>
+          <span className="shrink-0 text-[12px] text-ink-muted tabular-nums">Asked {relativeTime(item.askedAt)}</span>
         </div>
       </header>
 
@@ -497,9 +483,7 @@ function DetailPane({
             </div>
             <p className="mt-1.5 text-[13px] font-semibold text-ink">{source.title}</p>
             {source.body ? (
-              <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line text-ink-secondary">
-                {source.body}
-              </p>
+              <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line text-ink-secondary">{source.body}</p>
             ) : null}
           </section>
         ) : null}
@@ -525,11 +509,11 @@ function DetailPane({
           </p>
         ) : null}
 
-        {item.status === "gap" ? (
+        {item.status === 'gap' ? (
           <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-gap-border bg-gap-quiet px-3 py-2.5">
             <p className="flex-1 text-[12px] text-gap-text">
-              <span className="font-medium">Nothing in the knowledge base covers this.</span>{" "}
-              Write it once and the front desk takes it from here.
+              <span className="font-medium">Nothing in the knowledge base covers this.</span> Write it once and the
+              front desk takes it from here.
             </p>
             <button
               type="button"
@@ -544,33 +528,27 @@ function DetailPane({
         {/* The composer is a modal so the confirmation below can land in the
             pane behind it once the answer is saved. */}
         <Modal
-          open={item.status === "gap" && composing}
+          open={item.status === 'gap' && composing}
           title="Teach the front desk this answer"
           description="Write it once and the front desk takes it from here."
           onClose={onCancelComposing}
         >
-          {item.status === "gap" && composing ? (
+          {item.status === 'gap' && composing ? (
             <div className="flex min-h-0 flex-1 flex-col gap-3.5">
               <section className="shrink-0 rounded-[var(--radius)] border border-line bg-surface-sunken px-3 py-2.5">
                 <h3 className="text-[12px] font-medium text-ink-muted">A parent asked</h3>
-                <p className="mt-1 text-[13px] leading-snug font-medium text-ink">
-                  {item.question}
-                </p>
+                <p className="mt-1 text-[13px] leading-snug font-medium text-ink">{item.question}</p>
               </section>
 
-              {draftState.status === "loading" ? (
-                <p
-                  role="status"
-                  className="shrink-0 text-[12px] text-ink-muted"
-                >
+              {draftState.status === 'loading' ? (
+                <p role="status" className="shrink-0 text-[12px] text-ink-muted">
                   Reading your other entries to suggest a draft…
                 </p>
               ) : null}
 
-              {draftState.status === "failed" ? (
+              {draftState.status === 'failed' ? (
                 <p className="shrink-0 text-[12px] text-ink-muted">
-                  Couldn&rsquo;t draft this one. Write it in your own words and it&rsquo;ll
-                  work the same.
+                  Couldn&rsquo;t draft this one. Write it in your own words and it&rsquo;ll work the same.
                 </p>
               ) : null}
 
@@ -604,17 +582,14 @@ function DetailPane({
           ) : null}
         </Modal>
 
-        {item.status === "escalated" ? (
+        {item.status === 'escalated' ? (
           <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-warn-border bg-warn-quiet px-3 py-2.5">
             <p className="flex-1 text-[12px] text-warn-text">
-              <span className="font-medium">A human got looped in.</span> The front desk
-              handed this to staff instead of guessing.
+              <span className="font-medium">A human got looped in.</span> The front desk handed this to staff instead of
+              guessing.
             </p>
             {reviewed ? (
-              <span
-                role="status"
-                className="inline-flex items-center gap-1 text-[12px] font-medium text-warn-text"
-              >
+              <span role="status" className="inline-flex items-center gap-1 text-[12px] font-medium text-warn-text">
                 <svg
                   viewBox="0 0 20 20"
                   aria-hidden="true"
@@ -641,22 +616,20 @@ function DetailPane({
           </div>
         ) : null}
 
-        {item.status === "answered" && !celebrating ? (
-          <p className="text-[12px] text-ink-muted">
-            No action needed here. The front desk had this one covered.
-          </p>
+        {item.status === 'answered' && !celebrating ? (
+          <p className="text-[12px] text-ink-muted">No action needed here. The front desk had this one covered.</p>
         ) : null}
       </div>
     </article>
-  );
+  )
 }
 
 interface Stats {
-  total: number;
-  answered: number;
-  escalated: number;
-  gaps: number;
-  answeredPct: number;
+  total: number
+  answered: number
+  escalated: number
+  gaps: number
+  answeredPct: number
 }
 
 /**
@@ -670,46 +643,40 @@ function MetricStrip({ stats }: { stats: Stats }) {
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-2.5">
       <Metric value={String(stats.total)} label="asked" />
       <Metric value={`${stats.answeredPct}%`} label="answered on the spot" />
-      <Metric
-        value={String(stats.escalated)}
-        label="sent to staff"
-        tone={stats.escalated > 0 ? "warn" : "neutral"}
-      />
+      <Metric value={String(stats.escalated)} label="sent to staff" tone={stats.escalated > 0 ? 'warn' : 'neutral'} />
       <Metric
         value={String(stats.gaps)}
-        label={stats.gaps === 1 ? "gap to fill" : "gaps to fill"}
-        tone={stats.gaps > 0 ? "gap" : "neutral"}
+        label={stats.gaps === 1 ? 'gap to fill' : 'gaps to fill'}
+        tone={stats.gaps > 0 ? 'gap' : 'neutral'}
       />
       <p className="ml-auto hidden text-[12px] text-ink-muted lg:block">
-        {stats.gaps > 0
-          ? "Fill a gap and it stops coming back."
-          : "Nothing missing right now."}
+        {stats.gaps > 0 ? 'Fill a gap and it stops coming back.' : 'Nothing missing right now.'}
       </p>
     </div>
-  );
+  )
 }
 
 function Metric({
   value,
   label,
-  tone = "neutral",
+  tone = 'neutral',
 }: {
-  value: string;
-  label: string;
-  tone?: "neutral" | "warn" | "gap";
+  value: string
+  label: string
+  tone?: 'neutral' | 'warn' | 'gap'
 }) {
   const valueClass = {
-    neutral: "text-ink",
-    warn: "text-warn-text",
-    gap: "text-gap-text",
-  }[tone];
+    neutral: 'text-ink',
+    warn: 'text-warn-text',
+    gap: 'text-gap-text',
+  }[tone]
 
   return (
     <p className="flex items-baseline gap-1.5">
       <span className={`text-[15px] font-semibold tabular-nums ${valueClass}`}>{value}</span>
       <span className="text-[12px] text-ink-muted">{label}</span>
     </p>
-  );
+  )
 }
 
 function FilterTab({
@@ -719,11 +686,11 @@ function FilterTab({
   onClick,
   urgent = false,
 }: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-  urgent?: boolean;
+  label: string
+  count: number
+  active: boolean
+  onClick: () => void
+  urgent?: boolean
 }) {
   return (
     <button
@@ -731,19 +698,17 @@ function FilterTab({
       onClick={onClick}
       aria-pressed={active}
       className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-[12px] font-medium transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] sm:h-7 sm:min-h-0 ${
-        active
-          ? "bg-surface-sunken text-ink"
-          : "text-ink-muted hover:bg-surface-hover hover:text-ink-secondary"
+        active ? 'bg-surface-sunken text-ink' : 'text-ink-muted hover:bg-surface-hover hover:text-ink-secondary'
       }`}
     >
       {label}
       <span
         className={`tabular-nums ${
-          urgent && !active ? "text-gap-text" : active ? "text-ink-secondary" : "text-ink-muted"
+          urgent && !active ? 'text-gap-text' : active ? 'text-ink-secondary' : 'text-ink-muted'
         }`}
       >
         {count}
       </span>
     </button>
-  );
+  )
 }

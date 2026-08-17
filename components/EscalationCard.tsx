@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { CENTER } from "@/lib/seed";
+import { CENTER } from '@/lib/seed'
 
 interface EscalationCardProps {
-  answer: string;
-  reason?: string;
+  answer: string
+  reason?: string
   /** Who the model handed this to. Falls back to the director. */
-  routedTo?: string;
+  routedTo?: string
 }
 
-const TEL_HREF = `tel:+1${CENTER.phone.replace(/\D/g, "")}`;
+const TEL_HREF = `tel:+1${CENTER.phone.replace(/\D/g, '')}`
 
 /**
  * Shown when the model declines to answer on its own. The point is to make the
@@ -17,21 +17,16 @@ const TEL_HREF = `tel:+1${CENTER.phone.replace(/\D/g, "")}`;
  * as a routing receipt: who has it, and how to reach them now.
  */
 export function EscalationCard({ answer, reason, routedTo }: EscalationCardProps) {
-  const handler = routedTo?.trim() || CENTER.director;
+  const handler = routedTo?.trim() || CENTER.director
   return (
     <div
       className="overflow-hidden rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-warn-border bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
       data-fd-anim
-      style={{ animation: "fd-rise 280ms var(--ease-soft) both" }}
+      style={{ animation: 'fd-rise 280ms var(--ease-soft) both' }}
     >
       <div className="flex items-center gap-2 border-b border-warn-border bg-warn-quiet px-4 py-2.5">
-        <span
-          aria-hidden="true"
-          className="h-1.5 w-1.5 shrink-0 rounded-full bg-warn"
-        />
-        <p className="text-[10px] font-semibold tracking-[0.08em] text-warn-text uppercase">
-          Routed to {handler}
-        </p>
+        <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-warn" />
+        <p className="text-[10px] font-semibold tracking-[0.08em] text-warn-text uppercase">Routed to {handler}</p>
       </div>
 
       <div className="px-4 py-3.5">
@@ -65,5 +60,5 @@ export function EscalationCard({ answer, reason, routedTo }: EscalationCardProps
         ) : null}
       </div>
     </div>
-  );
+  )
 }

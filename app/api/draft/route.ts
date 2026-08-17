@@ -1,15 +1,9 @@
-import { NextResponse } from "next/server";
-import { CENTER } from "@/lib/seed";
-import { KNOWLEDGE_CATEGORIES } from "@/lib/types";
-import type {
-  DraftFailure,
-  DraftResponse,
-  DraftResult,
-  KnowledgeCategory,
-  KnowledgeEntry,
-} from "@/lib/types";
+import { NextResponse } from 'next/server'
+import { CENTER } from '@/lib/seed'
+import { KNOWLEDGE_CATEGORIES } from '@/lib/types'
+import type { DraftFailure, DraftResponse, DraftResult, KnowledgeCategory, KnowledgeEntry } from '@/lib/types'
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs'
 
 /*
  * Deliberately a separate route rather than a `mode` param on /api/chat.
@@ -19,23 +13,23 @@ export const runtime = "nodejs";
  * parent-facing path frozen, and it is worth paying.
  */
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-5.6-luna";
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
+const MODEL = 'gpt-5.6-luna'
 
 interface DraftRequestBody {
-  question: string;
-  knowledge: KnowledgeEntry[];
+  question: string
+  knowledge: KnowledgeEntry[]
 }
 
 /** Shape of the single field we read off the upstream response. */
 interface OpenAICompletion {
-  choices?: Array<{ message?: { content?: string | null } }>;
+  choices?: Array<{ message?: { content?: string | null } }>
 }
 
-const MAX_TITLE_CHARS = 90;
-const MAX_BODY_CHARS = 2000;
-const MAX_ASSUMPTIONS = 5;
-const MAX_ASSUMPTION_CHARS = 140;
+const MAX_TITLE_CHARS = 90
+const MAX_BODY_CHARS = 2000
+const MAX_ASSUMPTIONS = 5
+const MAX_ASSUMPTION_CHARS = 140
 
 /**
  * The failure posture here INVERTS the chat route's. Chat always returns a safe
@@ -45,20 +39,18 @@ const MAX_ASSUMPTION_CHARS = 140;
  * thing we never do is invent an entry.
  */
 function failure(reason: string): DraftFailure {
-  return { ok: false, reason };
+  return { ok: false, reason }
 }
 
 function renderKnowledge(knowledge: KnowledgeEntry[]): string {
   if (knowledge.length === 0) {
-    return "(The knowledge base is empty. There is nothing to match in voice or fact.)";
+    return '(The knowledge base is empty. There is nothing to match in voice or fact.)'
   }
-  return knowledge
-    .map((entry) => `[id: ${entry.id} | title: ${entry.title}]\n${entry.body}`)
-    .join("\n\n---\n\n");
+  return knowledge.map((entry) => `[id: ${entry.id} | title: ${entry.title}]\n${entry.body}`).join('\n\n---\n\n')
 }
 
 function buildDraftPrompt(knowledge: KnowledgeEntry[]): string {
-  const categories = KNOWLEDGE_CATEGORIES.map((c) => `"${c}"`).join(", ");
+  const categories = KNOWLEDGE_CATEGORIES.map((c) => `"${c}"`).join(', ')
 
   return `# ROLE
 You are helping ${CENTER.director}, the director of ${CENTER.name}, write a new entry for their parent-facing knowledge base. A parent asked something that nothing on file answers. Propose the entry so the director edits instead of starting from a blank page. The director is the author. This is a first pass they will correct and own.
@@ -103,20 +95,17 @@ Respond with a single JSON object and nothing else:
 
 "confidence" describes how well the existing entries supported this draft, not how true the draft is. Use "high" when adjacent entries carried the facts you needed. Use "low" when the draft is mostly scaffolding around brackets.
 
-"assumptions" lists what the director must confirm before saving, one short phrase each. Every square-bracket placeholder in the body belongs here.`;
+"assumptions" lists what the director must confirm before saving, one short phrase each. Every square-bracket placeholder in the body belongs here.`
 }
 
 function isKnowledgeEntry(value: unknown): value is KnowledgeEntry {
-  if (typeof value !== "object" || value === null) return false;
-  const entry = value as Record<string, unknown>;
-  return typeof entry.id === "string" && typeof entry.title === "string";
+  if (typeof value !== 'object' || value === null) return false
+  const entry = value as Record<string, unknown>
+  return typeof entry.id === 'string' && typeof entry.title === 'string'
 }
 
 function isKnowledgeCategory(value: unknown): value is KnowledgeCategory {
-  return (
-    typeof value === "string" &&
-    (KNOWLEDGE_CATEGORIES as readonly string[]).includes(value)
-  );
+  return typeof value === 'string' && (KNOWLEDGE_CATEGORIES as readonly string[]).includes(value)
 }
 
 /**
@@ -125,20 +114,20 @@ function isKnowledgeCategory(value: unknown): value is KnowledgeCategory {
  * that matters is enforced server-side, not merely requested.
  */
 function stripDashes(text: string): string {
-  return text.replace(/\s*[—–]\s*/g, ", ");
+  return text.replace(/\s*[—–]\s*/g, ', ')
 }
 
 function coerceAssumptions(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const items: string[] = [];
+  if (!Array.isArray(value)) return []
+  const items: string[] = []
   for (const item of value) {
-    if (typeof item !== "string") continue;
-    const trimmed = item.trim();
-    if (!trimmed) continue;
-    items.push(trimmed.slice(0, MAX_ASSUMPTION_CHARS));
-    if (items.length === MAX_ASSUMPTIONS) break;
+    if (typeof item !== 'string') continue
+    const trimmed = item.trim()
+    if (!trimmed) continue
+    items.push(trimmed.slice(0, MAX_ASSUMPTION_CHARS))
+    if (items.length === MAX_ASSUMPTIONS) break
   }
-  return items;
+  return items
 }
 
 /**
@@ -147,79 +136,68 @@ function coerceAssumptions(value: unknown): string[] {
  * half-formed draft: a fabricated policy is the one output this product refuses.
  */
 function coerceDraftResponse(raw: unknown): DraftResult {
-  if (typeof raw !== "object" || raw === null) {
-    return failure("model returned a non-object payload");
+  if (typeof raw !== 'object' || raw === null) {
+    return failure('model returned a non-object payload')
   }
-  const value = raw as Record<string, unknown>;
+  const value = raw as Record<string, unknown>
 
   // An empty draft is a failure, not a draft. There is nothing for the operator
   // to edit, and a blank box with a spinner behind it is worse than an error.
-  const rawBody = typeof value.body === "string" ? value.body.trim() : "";
+  const rawBody = typeof value.body === 'string' ? value.body.trim() : ''
   if (!rawBody) {
-    return failure("empty draft");
+    return failure('empty draft')
   }
 
   // Empty is legal: the client falls back to its own heuristic title.
-  const rawTitle = typeof value.title === "string" ? value.title.trim() : "";
+  const rawTitle = typeof value.title === 'string' ? value.title.trim() : ''
 
-  const category: KnowledgeCategory = isKnowledgeCategory(value.category)
-    ? value.category
-    : "policies";
+  const category: KnowledgeCategory = isKnowledgeCategory(value.category) ? value.category : 'policies'
 
   const response: DraftResponse = {
     ok: true,
     title: stripDashes(rawTitle).slice(0, MAX_TITLE_CHARS),
     category,
     body: stripDashes(rawBody).slice(0, MAX_BODY_CHARS),
-    confidence: value.confidence === "high" ? "high" : "low",
+    confidence: value.confidence === 'high' ? 'high' : 'low',
     assumptions: coerceAssumptions(value.assumptions),
-  };
+  }
 
-  return response;
+  return response
 }
 
 export async function POST(request: Request) {
-  let body: unknown;
+  let body: unknown
   try {
-    body = await request.json();
+    body = await request.json()
   } catch {
-    return NextResponse.json(
-      { error: "Request body must be valid JSON." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
 
-  const { question, knowledge } = (body ?? {}) as Partial<DraftRequestBody>;
+  const { question, knowledge } = (body ?? {}) as Partial<DraftRequestBody>
 
-  if (typeof question !== "string" || question.trim().length === 0) {
-    return NextResponse.json(
-      { error: "A non-empty 'question' string is required." },
-      { status: 400 },
-    );
+  if (typeof question !== 'string' || question.trim().length === 0) {
+    return NextResponse.json({ error: "A non-empty 'question' string is required." }, { status: 400 })
   }
 
   if (!Array.isArray(knowledge)) {
-    return NextResponse.json(
-      { error: "'knowledge' must be an array of knowledge entries." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "'knowledge' must be an array of knowledge entries." }, { status: 400 })
   }
 
-  const entries = knowledge.filter(isKnowledgeEntry);
+  const entries = knowledge.filter(isKnowledgeEntry)
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     // Status 200 with ok:false throughout: the client's res.ok check stays
     // simple, and the operator sees the failure instead of a silent empty box.
-    console.error("[draft] OPENAI_API_KEY is not set; returning a failure.");
-    return NextResponse.json(failure("The drafting service is not configured."));
+    console.error('[draft] OPENAI_API_KEY is not set; returning a failure.')
+    return NextResponse.json(failure('The drafting service is not configured.'))
   }
 
   try {
     const upstream = await fetch(OPENAI_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
@@ -227,44 +205,40 @@ export async function POST(request: Request) {
         // No temperature: this model only accepts the default and rejects the
         // request outright if one is sent. Grounding is enforced by the prompt
         // and the server-side coercion below rather than by sampling.
-        response_format: { type: "json_object" },
+        response_format: { type: 'json_object' },
         messages: [
-          { role: "system", content: buildDraftPrompt(entries) },
-          { role: "user", content: question.trim() },
+          { role: 'system', content: buildDraftPrompt(entries) },
+          { role: 'user', content: question.trim() },
         ],
       }),
-    });
+    })
 
     if (!upstream.ok) {
       // Logged server-side only: upstream errors can echo the key or prompt.
-      const detail = await upstream.text().catch(() => "<unreadable>");
-      console.error(`[draft] OpenAI error ${upstream.status}: ${detail}`);
-      return NextResponse.json(
-        failure(`The drafting service returned an error (status ${upstream.status}).`),
-      );
+      const detail = await upstream.text().catch(() => '<unreadable>')
+      console.error(`[draft] OpenAI error ${upstream.status}: ${detail}`)
+      return NextResponse.json(failure(`The drafting service returned an error (status ${upstream.status}).`))
     }
 
-    const completion = (await upstream.json()) as OpenAICompletion;
-    const content = completion.choices?.[0]?.message?.content;
+    const completion = (await upstream.json()) as OpenAICompletion
+    const content = completion.choices?.[0]?.message?.content
 
-    if (typeof content !== "string" || content.trim().length === 0) {
-      console.error("[draft] OpenAI returned an empty message.");
-      return NextResponse.json(failure("The drafting service returned nothing."));
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      console.error('[draft] OpenAI returned an empty message.')
+      return NextResponse.json(failure('The drafting service returned nothing.'))
     }
 
-    let parsed: unknown;
+    let parsed: unknown
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(content)
     } catch {
-      console.error("[draft] Model response was not valid JSON.");
-      return NextResponse.json(
-        failure("The drafting service returned an unreadable draft."),
-      );
+      console.error('[draft] Model response was not valid JSON.')
+      return NextResponse.json(failure('The drafting service returned an unreadable draft.'))
     }
 
-    return NextResponse.json(coerceDraftResponse(parsed));
+    return NextResponse.json(coerceDraftResponse(parsed))
   } catch (error) {
-    console.error("[draft] Unexpected failure calling OpenAI:", error);
-    return NextResponse.json(failure("The drafting service is unavailable."));
+    console.error('[draft] Unexpected failure calling OpenAI:', error)
+    return NextResponse.json(failure('The drafting service is unavailable.'))
   }
 }

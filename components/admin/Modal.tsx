@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef } from 'react'
 
 interface ModalProps {
-  open: boolean;
-  title: string;
-  description?: string;
-  onClose: () => void;
-  children: React.ReactNode;
+  open: boolean
+  title: string
+  description?: string
+  onClose: () => void
+  children: React.ReactNode
 }
 
 /**
@@ -20,71 +20,69 @@ interface ModalProps {
  * cannot wander into the page behind.
  */
 export function Modal({ open, title, description, onClose, children }: ModalProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const headingId = useId();
-  const descriptionId = useId();
+  const panelRef = useRef<HTMLDivElement>(null)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
+  const headingId = useId()
+  const descriptionId = useId()
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return
 
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    restoreFocusRef.current = document.activeElement as HTMLElement | null
 
     // The page behind must not scroll while the dialog is up.
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
 
     const focusables = () =>
       Array.from(
         panelRef.current?.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ) ?? [],
-      ).filter((el) => el.offsetParent !== null);
+      ).filter((el) => el.offsetParent !== null)
 
     // Land on the first real field rather than the close button.
-    const first = focusables()[0];
-    (
-      panelRef.current?.querySelector<HTMLElement>("input, textarea, select") ?? first
-    )?.focus();
+    const first = focusables()[0]
+    ;(panelRef.current?.querySelector<HTMLElement>('input, textarea, select') ?? first)?.focus()
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
       }
-      if (event.key !== "Tab") return;
+      if (event.key !== 'Tab') return
 
-      const items = focusables();
-      if (items.length === 0) return;
-      const firstItem = items[0];
-      const lastItem = items[items.length - 1];
-      const active = document.activeElement;
+      const items = focusables()
+      if (items.length === 0) return
+      const firstItem = items[0]
+      const lastItem = items[items.length - 1]
+      const active = document.activeElement
 
       if (event.shiftKey && active === firstItem) {
-        event.preventDefault();
-        lastItem.focus();
+        event.preventDefault()
+        lastItem.focus()
       } else if (!event.shiftKey && active === lastItem) {
-        event.preventDefault();
-        firstItem.focus();
+        event.preventDefault()
+        firstItem.focus()
       }
     }
 
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
       // The trigger can unmount while the dialog is open (an edited row may
       // re-render), in which case focusing it is a silent no-op. Defer so the
       // page has re-rendered, and fall back to the row list's container.
-      const target = restoreFocusRef.current;
+      const target = restoreFocusRef.current
       requestAnimationFrame(() => {
-        if (target?.isConnected) target.focus();
-      });
-    };
-  }, [open, onClose]);
+        if (target?.isConnected) target.focus()
+      })
+    }
+  }, [open, onClose])
 
-  if (!open) return null;
+  if (!open) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -95,7 +93,7 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
         onClick={onClose}
         data-modal-anim
         className="absolute inset-0 cursor-default bg-ink/25 backdrop-blur-[2px]"
-        style={{ animation: "modal-fade 140ms var(--ease) both" }}
+        style={{ animation: 'modal-fade 140ms var(--ease) both' }}
       />
 
       <div
@@ -108,14 +106,11 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
         /* Tall by default so the body textarea has real room, but it still
            shrinks to fit a short form rather than leaving dead space. */
         className="relative flex max-h-[92vh] min-h-[min(80vh,640px)] w-full max-w-[620px] flex-col overflow-hidden rounded-t-[var(--radius-lg)] border border-line bg-surface shadow-[0_12px_40px_rgba(23,20,45,0.14)] sm:max-h-[86vh] sm:rounded-[var(--radius-lg)]"
-        style={{ animation: "modal-rise 180ms var(--ease) both" }}
+        style={{ animation: 'modal-rise 180ms var(--ease) both' }}
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <h2
-              id={headingId}
-              className="font-display text-[15px] font-semibold tracking-[-0.01em] text-ink"
-            >
+            <h2 id={headingId} className="font-display text-[15px] font-semibold tracking-[-0.01em] text-ink">
               {title}
             </h2>
             {description ? (
@@ -145,9 +140,7 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
-          {children}
-        </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">{children}</div>
       </div>
 
       <style>{`
@@ -161,5 +154,5 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
         }
       `}</style>
     </div>
-  );
+  )
 }

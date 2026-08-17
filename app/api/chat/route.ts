@@ -1,30 +1,30 @@
-import { NextResponse } from "next/server";
-import { CENTER } from "@/lib/seed";
-import type { ChatResponse, KnowledgeEntry } from "@/lib/types";
+import { NextResponse } from 'next/server'
+import { CENTER } from '@/lib/seed'
+import type { ChatResponse, KnowledgeEntry } from '@/lib/types'
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs'
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-5.6-luna";
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
+const MODEL = 'gpt-5.6-luna'
 
 interface ChatRequestBody {
-  question: string;
-  knowledge: KnowledgeEntry[];
-  history?: HistoryTurn[];
+  question: string
+  knowledge: KnowledgeEntry[]
+  history?: HistoryTurn[]
 }
 
 /** Prior turns, oldest first, so follow-up questions resolve against context. */
 interface HistoryTurn {
-  role: "parent" | "desk";
-  text: string;
+  role: 'parent' | 'desk'
+  text: string
 }
 
 /** Enough for a real follow-up chain without letting the prompt grow forever. */
-const MAX_HISTORY_TURNS = 8;
+const MAX_HISTORY_TURNS = 8
 
 /** Shape of the single field we read off the upstream response. */
 interface OpenAICompletion {
-  choices?: Array<{ message?: { content?: string | null } }>;
+  choices?: Array<{ message?: { content?: string | null } }>
 }
 
 /**
@@ -35,26 +35,24 @@ function escalation(answer: string, escalationReason: string): ChatResponse {
   return {
     answer,
     sourceId: null,
-    confidence: "low",
+    confidence: 'low',
     escalate: true,
     escalationReason,
-  };
+  }
 }
 
 function unavailable(reason: string): ChatResponse {
   return escalation(
     `Sorry, the front desk is having trouble right now. Give us a call at ${CENTER.phone} and ${CENTER.director} or someone on staff will help you right away.`,
     reason,
-  );
+  )
 }
 
 function renderKnowledge(knowledge: KnowledgeEntry[]): string {
   if (knowledge.length === 0) {
-    return "(The knowledge base is empty. No question can be answered from it.)";
+    return '(The knowledge base is empty. No question can be answered from it.)'
   }
-  return knowledge
-    .map((entry) => `[id: ${entry.id} | title: ${entry.title}]\n${entry.body}`)
-    .join("\n\n---\n\n");
+  return knowledge.map((entry) => `[id: ${entry.id} | title: ${entry.title}]\n${entry.body}`).join('\n\n---\n\n')
 }
 
 function buildSystemPrompt(knowledge: KnowledgeEntry[]): string {
@@ -145,7 +143,7 @@ Respond with a single JSON object and nothing else:
   "needsKnowledge": boolean (true when this is a real question about the center, false for thanks, greetings, small talk, and off-topic messages),
   "escalationReason": string (include only when escalate is true; one short phrase explaining why, for the operator's inbox),
   "routedTo": string (include only when escalate is true; the name of the person picking this up)
-}`;
+}`
 }
 
 /**
@@ -153,26 +151,26 @@ Respond with a single JSON object and nothing else:
  * trimmed, and capped before they reach the model.
  */
 function sanitizeHistory(value: unknown): HistoryTurn[] {
-  if (!Array.isArray(value)) return [];
-  const turns: HistoryTurn[] = [];
+  if (!Array.isArray(value)) return []
+  const turns: HistoryTurn[] = []
   for (const item of value) {
-    if (typeof item !== "object" || item === null) continue;
-    const turn = item as Record<string, unknown>;
-    const role = turn.role;
-    const text = turn.text;
-    if (role !== "parent" && role !== "desk") continue;
-    if (typeof text !== "string") continue;
-    const trimmed = text.trim();
-    if (!trimmed) continue;
-    turns.push({ role, text: trimmed.slice(0, 1500) });
+    if (typeof item !== 'object' || item === null) continue
+    const turn = item as Record<string, unknown>
+    const role = turn.role
+    const text = turn.text
+    if (role !== 'parent' && role !== 'desk') continue
+    if (typeof text !== 'string') continue
+    const trimmed = text.trim()
+    if (!trimmed) continue
+    turns.push({ role, text: trimmed.slice(0, 1500) })
   }
-  return turns.slice(-MAX_HISTORY_TURNS);
+  return turns.slice(-MAX_HISTORY_TURNS)
 }
 
 function isKnowledgeEntry(value: unknown): value is KnowledgeEntry {
-  if (typeof value !== "object" || value === null) return false;
-  const entry = value as Record<string, unknown>;
-  return typeof entry.id === "string" && typeof entry.title === "string";
+  if (typeof value !== 'object' || value === null) return false
+  const entry = value as Record<string, unknown>
+  return typeof entry.id === 'string' && typeof entry.title === 'string'
 }
 
 /**
@@ -180,36 +178,28 @@ function isKnowledgeEntry(value: unknown): value is KnowledgeEntry {
  * the client. A sourceId that isn't a real entry id is dropped rather than
  * trusted — a citation to a nonexistent entry is worse than no citation.
  */
-function coerceChatResponse(
-  raw: unknown,
-  validIds: Set<string>,
-  knowledgeText: string,
-): ChatResponse {
-  if (typeof raw !== "object" || raw === null) {
-    return unavailable("model returned a non-object payload");
+function coerceChatResponse(raw: unknown, validIds: Set<string>, knowledgeText: string): ChatResponse {
+  if (typeof raw !== 'object' || raw === null) {
+    return unavailable('model returned a non-object payload')
   }
-  const value = raw as Record<string, unknown>;
+  const value = raw as Record<string, unknown>
 
-  const answer = typeof value.answer === "string" ? value.answer.trim() : "";
+  const answer = typeof value.answer === 'string' ? value.answer.trim() : ''
   if (!answer) {
-    return unavailable("model returned no answer text");
+    return unavailable('model returned no answer text')
   }
 
-  const sourceId =
-    typeof value.sourceId === "string" && validIds.has(value.sourceId)
-      ? value.sourceId
-      : null;
+  const sourceId = typeof value.sourceId === 'string' && validIds.has(value.sourceId) ? value.sourceId : null
 
   // An uncited answer can never be "high" confidence: nothing backs it.
-  const confidence: ChatResponse["confidence"] =
-    value.confidence === "high" && sourceId !== null ? "high" : "low";
+  const confidence: ChatResponse['confidence'] = value.confidence === 'high' && sourceId !== null ? 'high' : 'low'
 
-  const escalate = value.escalate === true;
+  const escalate = value.escalate === true
 
   // Defaults to true, so a real question is never silently dropped from the
   // operator's queue by a model that forgot the field. Only an explicit false
   // marks something as small talk.
-  const needsKnowledge = value.needsKnowledge !== false;
+  const needsKnowledge = value.needsKnowledge !== false
 
   const response: ChatResponse = {
     answer,
@@ -217,71 +207,56 @@ function coerceChatResponse(
     confidence,
     escalate,
     needsKnowledge,
-  };
+  }
 
   if (escalate) {
-    const reason =
-      typeof value.escalationReason === "string"
-        ? value.escalationReason.trim()
-        : "";
-    response.escalationReason = reason || "Passed to the director for review.";
+    const reason = typeof value.escalationReason === 'string' ? value.escalationReason.trim() : ''
+    response.escalationReason = reason || 'Passed to the director for review.'
 
     // Only accept a name the knowledge base actually mentions, the same way a
     // sourceId that matches no entry is dropped. An invented staff member on a
     // routing card is worse than falling back to the director.
-    const claimed =
-      typeof value.routedTo === "string" ? value.routedTo.trim().slice(0, 60) : "";
-    response.routedTo = claimed && knowledgeText.includes(claimed)
-      ? claimed
-      : CENTER.director;
+    const claimed = typeof value.routedTo === 'string' ? value.routedTo.trim().slice(0, 60) : ''
+    response.routedTo = claimed && knowledgeText.includes(claimed) ? claimed : CENTER.director
   }
 
-  return response;
+  return response
 }
 
 export async function POST(request: Request) {
-  let body: unknown;
+  let body: unknown
   try {
-    body = await request.json();
+    body = await request.json()
   } catch {
-    return NextResponse.json(
-      { error: "Request body must be valid JSON." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
 
-  const { question, knowledge, history } = (body ?? {}) as Partial<ChatRequestBody>;
+  const { question, knowledge, history } = (body ?? {}) as Partial<ChatRequestBody>
 
-  if (typeof question !== "string" || question.trim().length === 0) {
-    return NextResponse.json(
-      { error: "A non-empty 'question' string is required." },
-      { status: 400 },
-    );
+  if (typeof question !== 'string' || question.trim().length === 0) {
+    return NextResponse.json({ error: "A non-empty 'question' string is required." }, { status: 400 })
   }
 
   if (!Array.isArray(knowledge)) {
-    return NextResponse.json(
-      { error: "'knowledge' must be an array of knowledge entries." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "'knowledge' must be an array of knowledge entries." }, { status: 400 })
   }
 
-  const entries = knowledge.filter(isKnowledgeEntry);
-  const validIds = new Set(entries.map((entry) => entry.id));
-  const priorTurns = sanitizeHistory(history);
+  const entries = knowledge.filter(isKnowledgeEntry)
+  const validIds = new Set(entries.map((entry) => entry.id))
+  const priorTurns = sanitizeHistory(history)
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     // The demo must degrade, not crash, when the key isn't configured.
-    console.error("[chat] OPENAI_API_KEY is not set; returning escalation.");
-    return NextResponse.json(unavailable("OPENAI_API_KEY is not configured"));
+    console.error('[chat] OPENAI_API_KEY is not set; returning escalation.')
+    return NextResponse.json(unavailable('OPENAI_API_KEY is not configured'))
   }
 
   try {
     const upstream = await fetch(OPENAI_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
@@ -289,50 +264,46 @@ export async function POST(request: Request) {
         // No temperature: this model only accepts the default and rejects the
         // request outright if one is sent. Grounding is enforced by the prompt
         // and the server-side citation check rather than by sampling.
-        response_format: { type: "json_object" },
+        response_format: { type: 'json_object' },
         messages: [
-          { role: "system", content: buildSystemPrompt(entries) },
+          { role: 'system', content: buildSystemPrompt(entries) },
           // Prior turns let "what if it's under 90?" resolve against the fever
           // question that came before it instead of matching a stray number.
           ...priorTurns.map((turn) => ({
-            role: turn.role === "parent" ? ("user" as const) : ("assistant" as const),
+            role: turn.role === 'parent' ? ('user' as const) : ('assistant' as const),
             content: turn.text,
           })),
-          { role: "user", content: question.trim() },
+          { role: 'user', content: question.trim() },
         ],
       }),
-    });
+    })
 
     if (!upstream.ok) {
       // Logged server-side only: upstream errors can echo the key or prompt.
-      const detail = await upstream.text().catch(() => "<unreadable>");
-      console.error(`[chat] OpenAI error ${upstream.status}: ${detail}`);
-      return NextResponse.json(
-        unavailable(`upstream error (status ${upstream.status})`),
-      );
+      const detail = await upstream.text().catch(() => '<unreadable>')
+      console.error(`[chat] OpenAI error ${upstream.status}: ${detail}`)
+      return NextResponse.json(unavailable(`upstream error (status ${upstream.status})`))
     }
 
-    const completion = (await upstream.json()) as OpenAICompletion;
-    const content = completion.choices?.[0]?.message?.content;
+    const completion = (await upstream.json()) as OpenAICompletion
+    const content = completion.choices?.[0]?.message?.content
 
-    if (typeof content !== "string" || content.trim().length === 0) {
-      console.error("[chat] OpenAI returned an empty message.");
-      return NextResponse.json(unavailable("empty model response"));
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      console.error('[chat] OpenAI returned an empty message.')
+      return NextResponse.json(unavailable('empty model response'))
     }
 
-    let parsed: unknown;
+    let parsed: unknown
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(content)
     } catch {
-      console.error("[chat] Model response was not valid JSON.");
-      return NextResponse.json(unavailable("model response was not valid JSON"));
+      console.error('[chat] Model response was not valid JSON.')
+      return NextResponse.json(unavailable('model response was not valid JSON'))
     }
 
-    return NextResponse.json(
-      coerceChatResponse(parsed, validIds, entries.map((e) => e.body).join("\n")),
-    );
+    return NextResponse.json(coerceChatResponse(parsed, validIds, entries.map((e) => e.body).join('\n')))
   } catch (error) {
-    console.error("[chat] Unexpected failure calling OpenAI:", error);
-    return NextResponse.json(unavailable("unexpected server error"));
+    console.error('[chat] Unexpected failure calling OpenAI:', error)
+    return NextResponse.json(unavailable('unexpected server error'))
   }
 }

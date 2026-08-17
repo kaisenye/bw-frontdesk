@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# Formats staged files with Prettier and restages them, so what lands in the
+# commit is exactly what was formatted. Files staged but since edited in the
+# working tree are skipped: formatting one would stage changes nobody reviewed.
+#
+# Enable with:  npm run hooks
+# Skip once with: git commit --no-verify
+
+set -e
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.mjs' '*.js' '*.json' '*.css' '*.md')
+[ -z "$STAGED" ] && exit 0
+
+# A file with unstaged edits on top of staged ones would get those edits swept
+# in by `git add`. Leave it alone and say so.
+PARTIAL=$(git diff --name-only -- $STAGED)
+
+TO_FORMAT=""
+for file in $STAGED; do
+  case "$PARTIAL" in
+    *"$file"*) continue ;;
+  esac
+  [ -f "$file" ] && TO_FORMAT="$TO_FORMAT $file"
+done
+
+if [ -n "$PARTIAL" ]; then
+  echo "pre-commit: skipping files with unstaged changes:"
+  echo "$PARTIAL" | sed 's/^/  /'
+fi
+
+[ -z "$TO_FORMAT" ] && exit 0
+
+npx prettier --write --ignore-unknown $TO_FORMAT
+git add $TO_FORMAT

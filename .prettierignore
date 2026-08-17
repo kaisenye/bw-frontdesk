@@ -1,0 +1,6 @@
+.next
+node_modules
+package-lock.json
+
+# Hand-tuned coordinates. Reflowing this would only make the diff noisy.
+docs/architecture.svg
