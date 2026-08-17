@@ -75,7 +75,9 @@ echo 'OPENAI_API_KEY=sk-...' > .env.local
 npm run dev
 ```
 
-Without a key the app still runs. Every request degrades to the same warm "call the center" escalation rather than an error.
+Without a key the app still runs. Every request degrades to the same warm "call the center" escalation rather than an error, which is the intended behavior and not a crash.
+
+Deploying needs the same key set in the host's environment (on Vercel: Settings, then Environment Variables, scoped to Production). A deployed build without it answers every question with the escalation above.
 
 ## Layout
 
