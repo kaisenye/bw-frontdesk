@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientKey, rateLimit } from '@/lib/rate-limit'
 import { CENTER } from '@/lib/seed'
 import { HANDBOOK_CATEGORIES } from '@/lib/types'
 import type { DraftFailure, DraftResponse, DraftResult, HandbookCategory, HandbookEntry } from '@/lib/types'
@@ -15,6 +16,15 @@ export const runtime = 'nodejs'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const MODEL = 'gpt-5.6-luna'
+
+/* Public-demo guards, matching the chat route. See lib/rate-limit.ts. */
+const MAX_QUESTION_CHARS = 1000
+const MAX_HANDBOOK_ENTRIES = 100
+const MAX_HANDBOOK_CHARS = 120_000
+
+/** Lower than chat: drafting costs more and is used far less often. */
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 60_000
 
 interface DraftRequestBody {
   question: string
@@ -166,6 +176,16 @@ function coerceDraftResponse(raw: unknown): DraftResult {
 }
 
 export async function POST(request: Request) {
+  // Tighter than chat: drafting is the pricier call, and an operator writing an
+  // entry does it a few times an hour, not a few times a minute.
+  const limit = rateLimit(`draft:${clientKey(request)}`, RATE_LIMIT, RATE_WINDOW_MS)
+  if (!limit.ok) {
+    return NextResponse.json(failure('Too many drafts at once. Give it a minute and try again.'), {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfter) },
+    })
+  }
+
   let body: unknown
   try {
     body = await request.json()
@@ -179,11 +199,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A non-empty 'question' string is required." }, { status: 400 })
   }
 
+  if (question.length > MAX_QUESTION_CHARS) {
+    return NextResponse.json({ error: 'That question is too long.' }, { status: 413 })
+  }
+
   if (!Array.isArray(handbook)) {
     return NextResponse.json({ error: "'handbook' must be an array of handbook entries." }, { status: 400 })
   }
 
+  if (handbook.length > MAX_HANDBOOK_ENTRIES) {
+    return NextResponse.json({ error: 'That handbook is too large for this demo.' }, { status: 413 })
+  }
+
   const entries = handbook.filter(isHandbookEntry)
+
+  const handbookChars = entries.reduce((sum, entry) => sum + entry.body.length, 0)
+  if (handbookChars > MAX_HANDBOOK_CHARS) {
+    return NextResponse.json({ error: 'That handbook is too large for this demo.' }, { status: 413 })
+  }
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientKey, rateLimit } from '@/lib/rate-limit'
 import { CENTER } from '@/lib/seed'
 import type { ChatResponse, HandbookEntry } from '@/lib/types'
 
@@ -21,6 +22,19 @@ interface HistoryTurn {
 
 /** Enough for a real follow-up chain without letting the prompt grow forever. */
 const MAX_HISTORY_TURNS = 8
+
+/*
+ * Public-demo guards. The handbook arrives from the client, so without these a
+ * single request could push an arbitrarily large prompt and run up a bill. The
+ * numbers sit far above anything the real app sends (10 entries, ~15k chars).
+ */
+const MAX_QUESTION_CHARS = 1000
+const MAX_HANDBOOK_ENTRIES = 100
+const MAX_HANDBOOK_CHARS = 120_000
+
+/** Roughly one question every six seconds, which no real parent approaches. */
+const RATE_LIMIT = 10
+const RATE_WINDOW_MS = 60_000
 
 /** Shape of the single field we read off the upstream response. */
 interface OpenAICompletion {
@@ -224,6 +238,20 @@ function coerceChatResponse(raw: unknown, validIds: Set<string>, handbookText: s
 }
 
 export async function POST(request: Request) {
+  // Checked before any parsing, so a flood costs as little as possible.
+  const limit = rateLimit(clientKey(request), RATE_LIMIT, RATE_WINDOW_MS)
+  if (!limit.ok) {
+    return NextResponse.json(
+      // A ChatResponse shape, not an error: the chat page renders whatever comes
+      // back, and a real person can still help them right now.
+      escalation(
+        `The front desk is getting a lot of questions at once. Give it a minute, or call us at ${CENTER.phone} and someone will help you right away.`,
+        'rate limited',
+      ),
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    )
+  }
+
   let body: unknown
   try {
     body = await request.json()
@@ -237,11 +265,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A non-empty 'question' string is required." }, { status: 400 })
   }
 
+  if (question.length > MAX_QUESTION_CHARS) {
+    return NextResponse.json({ error: 'That question is too long.' }, { status: 413 })
+  }
+
   if (!Array.isArray(handbook)) {
     return NextResponse.json({ error: "'handbook' must be an array of handbook entries." }, { status: 400 })
   }
 
+  if (handbook.length > MAX_HANDBOOK_ENTRIES) {
+    return NextResponse.json({ error: 'That handbook is too large for this demo.' }, { status: 413 })
+  }
+
   const entries = handbook.filter(isHandbookEntry)
+
+  // Entry count alone is not a real bound: a few entries with huge bodies cost
+  // the same as many small ones, and the character total is what gets billed.
+  const handbookChars = entries.reduce((sum, entry) => sum + entry.body.length, 0)
+  if (handbookChars > MAX_HANDBOOK_CHARS) {
+    return NextResponse.json({ error: 'That handbook is too large for this demo.' }, { status: 413 })
+  }
   const validIds = new Set(entries.map((entry) => entry.id))
   const priorTurns = sanitizeHistory(history)
 
