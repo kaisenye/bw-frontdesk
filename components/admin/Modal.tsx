@@ -105,7 +105,9 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
         aria-labelledby={headingId}
         aria-describedby={description ? descriptionId : undefined}
         data-modal-anim
-        className="relative flex max-h-[92vh] w-full max-w-[620px] flex-col overflow-hidden rounded-t-[var(--radius-lg)] border border-line bg-surface shadow-[0_12px_40px_rgba(23,20,45,0.14)] sm:rounded-[var(--radius-lg)]"
+        /* Tall by default so the body textarea has real room, but it still
+           shrinks to fit a short form rather than leaving dead space. */
+        className="relative flex max-h-[92vh] min-h-[min(80vh,640px)] w-full max-w-[620px] flex-col overflow-hidden rounded-t-[var(--radius-lg)] border border-line bg-surface shadow-[0_12px_40px_rgba(23,20,45,0.14)] sm:max-h-[86vh] sm:rounded-[var(--radius-lg)]"
         style={{ animation: "modal-rise 180ms var(--ease) both" }}
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
@@ -143,7 +145,9 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
           </button>
         </div>
 
-        <div className="overflow-y-auto px-5 py-4">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
+          {children}
+        </div>
       </div>
 
       <style>{`

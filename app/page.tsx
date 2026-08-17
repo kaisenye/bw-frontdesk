@@ -316,7 +316,7 @@ export default function ParentChatPage() {
             autoComplete="off"
             placeholder={busy ? "Checking the handbook…" : "Ask about hours, tuition, sick days…"}
             /* 16px on the input only, so iOS Safari doesn't zoom on focus. */
-            className="min-h-[46px] flex-1 rounded-[var(--radius-soft)] border border-line-strong bg-surface px-4 text-[16px] text-ink shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors duration-200 [transition-timing-function:var(--ease-soft)] placeholder:text-ink-muted hover:border-accent-border focus:border-accent focus:outline-none disabled:bg-surface-sunken disabled:text-ink-muted sm:text-[15px]"
+            className="min-h-[46px] flex-1 rounded-[var(--radius-soft)] border border-line-strong bg-surface px-4 text-[16px] text-ink shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-[color,background-color,border-color,box-shadow] duration-200 [transition-timing-function:var(--ease-soft)] placeholder:text-ink-muted hover:border-accent-border focus:border-accent focus:outline-none disabled:bg-surface-sunken disabled:text-ink-muted sm:text-[15px]"
           />
           <button
             type="submit"

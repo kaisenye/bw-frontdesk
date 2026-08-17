@@ -466,8 +466,8 @@ function DetailPane({
           onClose={onCancelComposing}
         >
           {item.status === "gap" && composing ? (
-            <div className="flex flex-col gap-3.5">
-              <section className="rounded-[var(--radius)] border border-line bg-surface-sunken px-3 py-2.5">
+            <div className="flex min-h-0 flex-1 flex-col gap-3.5">
+              <section className="shrink-0 rounded-[var(--radius)] border border-line bg-surface-sunken px-3 py-2.5">
                 <h3 className="text-[12px] font-medium text-ink-muted">A parent asked</h3>
                 <p className="mt-1 text-[13px] leading-snug font-medium text-ink">
                   {item.question}

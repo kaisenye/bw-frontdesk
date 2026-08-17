@@ -36,6 +36,7 @@ Daily rhythm: 7:00 arrival & free play, 9:00 circle time, 9:30 learning centers,
 - Winter Break: December 24, 2026 through January 1, 2027
 - Martin Luther King Jr. Day: Monday, January 18, 2027
 - Memorial Day: Monday, May 31, 2027
+- Juneteenth: Friday, June 18, 2027 (observed, since June 19 falls on a Saturday)
 - Staff Development Days: Friday, October 9, 2026 and Friday, February 12, 2027 (CLOSED, no childcare)
 - Independence Day: Monday, July 5, 2027
 

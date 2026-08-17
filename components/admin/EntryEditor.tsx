@@ -49,14 +49,14 @@ export function EntryEditor({
 
   const labelClass = "block text-[12px] font-medium text-ink-secondary";
   const controlClass =
-    "w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)] sm:py-1";
+    "w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color,box-shadow] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)] sm:py-1";
   /* Thumb-sized on a phone, Linear-dense on a laptop. */
   const singleLine = "min-h-[44px] sm:min-h-0 sm:h-8";
   const actionButton =
     "inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] px-3.5 text-[13px] font-medium transition-[background-color,color,opacity] duration-[140ms] [transition-timing-function:var(--ease)] sm:min-h-0 sm:h-8";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-3.5">
       <div className="grid gap-3.5 sm:grid-cols-[1fr_auto]">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={titleId} className={labelClass}>
@@ -92,7 +92,9 @@ export function EntryEditor({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      {/* The answer field absorbs the modal's spare height, so a long policy
+          is written in one view instead of a scrolling sliver. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-1.5">
         <label htmlFor={bodyId} className={labelClass}>
           What should the front desk say?
         </label>
@@ -102,7 +104,7 @@ export function EntryEditor({
           onChange={(e) => setBody(e.target.value)}
           rows={8}
           placeholder={bodyPlaceholder ?? "Write it the way you'd explain it to a parent."}
-          className={`${controlClass} resize-y leading-relaxed sm:py-2`}
+          className={`${controlClass} min-h-[160px] flex-1 resize-y leading-relaxed sm:py-2`}
         />
         <p className="text-[12px] text-ink-muted">
           Plain language works best. The front desk quotes this straight to parents.

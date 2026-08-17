@@ -106,7 +106,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search titles and answers"
-            className="min-h-[44px] w-full rounded-[var(--radius)] border border-line bg-surface pr-2.5 pl-8 text-[13px] text-ink outline-none transition-[border-color] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-line-strong focus:border-[var(--border-focus)] sm:h-8 sm:min-h-0"
+            className="min-h-[44px] w-full rounded-[var(--radius)] border border-line bg-surface pr-2.5 pl-8 text-[13px] text-ink outline-none transition-[border-color,box-shadow] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-line-strong focus:border-[var(--border-focus)] sm:h-8 sm:min-h-0"
           />
         </div>
         <button
