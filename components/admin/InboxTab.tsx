@@ -170,8 +170,9 @@ export function InboxTab({ log, entries }: InboxTabProps) {
               mobileView === "detail" ? "hidden md:flex" : "flex"
             }`}
           >
+            {/* Both panes' headers share this height so the two rules meet. */}
             <div
-              className="flex flex-wrap items-center gap-1 border-b border-line px-2 py-1.5"
+              className="flex h-12 shrink-0 items-center gap-1 overflow-x-auto border-b border-line px-2"
               role="group"
               aria-label="Filter questions"
             >
@@ -218,8 +219,10 @@ export function InboxTab({ log, entries }: InboxTabProps) {
           </div>
 
           {/* Right pane: the whole story for one question. */}
+          {/* Scrolling lives on the body inside DetailPane, not here, so the
+              pane header can stay pinned above it. */}
           <div
-            className={`min-h-0 flex-1 flex-col overflow-y-auto bg-surface-sunken md:bg-surface ${
+            className={`min-h-0 flex-1 flex-col overflow-hidden bg-surface-sunken md:bg-surface ${
               mobileView === "detail" ? "flex" : "hidden md:flex"
             }`}
           >
@@ -360,11 +363,13 @@ function DetailPane({
 }: DetailPaneProps) {
   return (
     <article className="flex min-h-0 flex-1 flex-col bg-surface">
-      <header className="flex items-center gap-2 border-b border-line px-3 py-1.5 md:px-5">
+      {/* Fixed above the scrolling body, so the status and timestamp stay put
+          while reading a long policy. h-12 matches the filter row beside it. */}
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 md:px-5">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex min-h-[44px] cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] px-1.5 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink sm:h-8 sm:min-h-0 md:hidden"
+          className="-ml-1 inline-flex h-9 shrink-0 cursor-pointer items-center gap-1 rounded-[var(--radius-sm)] px-2 text-[13px] font-medium text-ink-secondary transition-[background-color,color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-surface-hover hover:text-ink md:hidden"
         >
           <svg
             viewBox="0 0 20 20"
@@ -381,15 +386,15 @@ function DetailPane({
           All questions
         </button>
 
-        <div className="flex min-h-[44px] flex-1 flex-wrap items-center justify-end gap-2 sm:min-h-[36px] md:justify-between">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 md:justify-between">
           <StatusBadge status={item.status} />
-          <span className="text-[12px] text-ink-muted tabular-nums">
+          <span className="shrink-0 text-[12px] text-ink-muted tabular-nums">
             Asked {relativeTime(item.askedAt)}
           </span>
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 px-3 py-4 md:px-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 md:px-5">
         <section>
           <h2 className="text-[12px] font-medium text-ink-muted">A parent asked</h2>
           <p className="mt-1 font-display text-[15px] leading-snug font-semibold tracking-[-0.01em] text-ink">
