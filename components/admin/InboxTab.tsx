@@ -649,9 +649,6 @@ function MetricStrip({ stats }: { stats: Stats }) {
         label={stats.gaps === 1 ? 'gap to fill' : 'gaps to fill'}
         tone={stats.gaps > 0 ? 'gap' : 'neutral'}
       />
-      <p className="ml-auto hidden text-[12px] text-ink-muted lg:block">
-        {stats.gaps > 0 ? 'Fill a gap and it stops coming back.' : 'Nothing missing right now.'}
-      </p>
     </div>
   )
 }

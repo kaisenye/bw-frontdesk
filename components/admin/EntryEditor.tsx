@@ -123,9 +123,6 @@ export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onDirty, on
           placeholder={bodyPlaceholder ?? "Write it the way you'd explain it to a parent."}
           className={`${controlClass} min-h-48 flex-1 resize-y leading-relaxed sm:py-2`}
         />
-        <p className="text-[12px] text-ink-muted">
-          Plain language works best. The front desk quotes this straight to parents.
-        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
