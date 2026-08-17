@@ -42,6 +42,12 @@ export interface ChatResponse {
   confidence: "high" | "low";
   escalate: boolean;
   escalationReason?: string;
+  /**
+   * Who the question is being handed to. The card used to always name the
+   * director, which read as broken when a parent had just said they could not
+   * reach her, so the model picks the destination from context instead.
+   */
+  routedTo?: string;
 }
 
 export interface ChatMessage {

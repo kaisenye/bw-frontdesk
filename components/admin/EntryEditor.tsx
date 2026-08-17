@@ -1,59 +1,53 @@
-"use client";
+'use client'
 
-import { useId, useState } from "react";
-import type { KnowledgeCategory } from "@/lib/types";
-import { CATEGORIES, CATEGORY_LABEL } from "./shared";
+import { useId, useState } from 'react'
+import type { KnowledgeCategory } from '@/lib/types'
+import { CATEGORIES, CATEGORY_LABEL } from './shared'
 
 export interface EntryDraft {
-  title: string;
-  category: KnowledgeCategory;
-  body: string;
+  title: string
+  category: KnowledgeCategory
+  body: string
 }
 
 interface EntryEditorProps {
-  initial: EntryDraft;
+  initial: EntryDraft
   /** Copy on the primary button, e.g. "Save entry" vs "Add to knowledge base". */
-  submitLabel: string;
-  bodyPlaceholder?: string;
-  onSave: (draft: EntryDraft) => void;
-  onCancel: () => void;
+  submitLabel: string
+  bodyPlaceholder?: string
+  onSave: (draft: EntryDraft) => void
+  onCancel: () => void
 }
 
 /**
  * Shared by the Knowledge tab (edit/new) and the Inbox gap composer, so writing
  * an answer feels identical wherever the operator starts from.
  */
-export function EntryEditor({
-  initial,
-  submitLabel,
-  bodyPlaceholder,
-  onSave,
-  onCancel,
-}: EntryEditorProps) {
-  const [title, setTitle] = useState(initial.title);
-  const [category, setCategory] = useState<KnowledgeCategory>(initial.category);
-  const [body, setBody] = useState(initial.body);
-  const fieldId = useId();
+export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onSave, onCancel }: EntryEditorProps) {
+  const [title, setTitle] = useState(initial.title)
+  const [category, setCategory] = useState<KnowledgeCategory>(initial.category)
+  const [body, setBody] = useState(initial.body)
+  const fieldId = useId()
 
-  const titleId = `${fieldId}-title`;
-  const categoryId = `${fieldId}-category`;
-  const bodyId = `${fieldId}-body`;
+  const titleId = `${fieldId}-title`
+  const categoryId = `${fieldId}-category`
+  const bodyId = `${fieldId}-body`
 
-  const canSave = title.trim().length > 0 && body.trim().length > 0;
+  const canSave = title.trim().length > 0 && body.trim().length > 0
 
   function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!canSave) return;
-    onSave({ title: title.trim(), category, body: body.trim() });
+    event.preventDefault()
+    if (!canSave) return
+    onSave({ title: title.trim(), category, body: body.trim() })
   }
 
-  const labelClass = "block text-[12px] font-medium text-ink-secondary";
+  const labelClass = 'block text-[12px] font-medium text-ink-secondary'
   const controlClass =
-    "w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color,box-shadow] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)] sm:py-1";
+    'w-full rounded-[var(--radius)] border border-line-strong bg-surface px-2.5 py-2 text-[13px] text-ink outline-none transition-[border-color,background-color,box-shadow] duration-[140ms] [transition-timing-function:var(--ease)] placeholder:text-ink-muted hover:border-[var(--border-focus)] focus:border-[var(--border-focus)] sm:py-1'
   /* Thumb-sized on a phone, Linear-dense on a laptop. */
-  const singleLine = "min-h-[44px] sm:min-h-0 sm:h-8";
+  const singleLine = 'min-h-[44px] sm:min-h-0 sm:h-8'
   const actionButton =
-    "inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] px-3.5 text-[13px] font-medium transition-[background-color,color,opacity] duration-[140ms] [transition-timing-function:var(--ease)] sm:min-h-0 sm:h-8";
+    'inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-[var(--radius)] px-3.5 text-[13px] font-medium transition-[background-color,color,opacity] duration-[140ms] [transition-timing-function:var(--ease)] sm:min-h-0 sm:h-8'
 
   return (
     <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-3.5">
@@ -104,7 +98,7 @@ export function EntryEditor({
           onChange={(e) => setBody(e.target.value)}
           rows={8}
           placeholder={bodyPlaceholder ?? "Write it the way you'd explain it to a parent."}
-          className={`${controlClass} min-h-[160px] flex-1 resize-y leading-relaxed sm:py-2`}
+          className={`${controlClass} min-h-48 flex-1 resize-y leading-relaxed sm:py-2`}
         />
         <p className="text-[12px] text-ink-muted">
           Plain language works best. The front desk quotes this straight to parents.
@@ -126,12 +120,8 @@ export function EntryEditor({
         >
           Cancel
         </button>
-        {!canSave ? (
-          <span className="text-[12px] text-ink-muted">
-            Add a title and an answer to save.
-          </span>
-        ) : null}
+        {!canSave ? <span className="text-[12px] text-ink-muted">Add a title and an answer to save.</span> : null}
       </div>
     </form>
-  );
+  )
 }

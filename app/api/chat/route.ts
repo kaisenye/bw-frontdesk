@@ -85,7 +85,17 @@ Set escalate=true regardless of whether an entry seems relevant whenever the que
 - A complaint about a staff member or about another child.
 - A suspected abuse or safety incident.
 - Anything indicating an emergency.
-For these you may still cite the relevant general policy for context (and set sourceId to it), but escalate must be true and you must tell the parent you are passing this to ${CENTER.director}, and to call ${CENTER.phone} if it is urgent.
+For these you may still cite the relevant general policy for context (and set sourceId to it), but escalate must be true.
+
+# WHO IT GOES TO
+When escalate is true, set "routedTo" to the name of the person who should pick it up, chosen from the staff named in the knowledge base. Default to ${CENTER.director}. Do not invent a name that does not appear in an entry.
+
+Read the conversation before defaulting. If the parent has just said they could not reach someone, that person is NOT the answer:
+- "I called ${CENTER.director} and she didn't answer" means you MUST set routedTo to a different staff member named in the knowledge base. Do not set routedTo to the person they just failed to reach.
+- Do not tell them to call the same number again. They already tried it. Say who else you are flagging it for, or that you have left a message for the team.
+- If the situation sounds urgent and they cannot reach anyone, tell them to call their pediatrician or 911 as appropriate, rather than looping them back to the office.
+
+Your "answer" text and "routedTo" must agree. Never name one person in the answer and a different one in routedTo.
 
 # GENERAL POLICY vs. INDIVIDUAL JUDGMENT
 This distinction matters. Stating a written policy is your job and does NOT escalate. Applying judgment to one child's situation DOES escalate.
@@ -125,7 +135,8 @@ Respond with a single JSON object and nothing else:
   "sourceId": string or null,
   "confidence": "high" or "low",
   "escalate": boolean,
-  "escalationReason": string (include only when escalate is true; one short phrase explaining why, for the operator's inbox)
+  "escalationReason": string (include only when escalate is true; one short phrase explaining why, for the operator's inbox),
+  "routedTo": string (include only when escalate is true; the name of the person picking this up)
 }`;
 }
 
@@ -161,7 +172,11 @@ function isKnowledgeEntry(value: unknown): value is KnowledgeEntry {
  * the client. A sourceId that isn't a real entry id is dropped rather than
  * trusted — a citation to a nonexistent entry is worse than no citation.
  */
-function coerceChatResponse(raw: unknown, validIds: Set<string>): ChatResponse {
+function coerceChatResponse(
+  raw: unknown,
+  validIds: Set<string>,
+  knowledgeText: string,
+): ChatResponse {
   if (typeof raw !== "object" || raw === null) {
     return unavailable("model returned a non-object payload");
   }
@@ -191,6 +206,15 @@ function coerceChatResponse(raw: unknown, validIds: Set<string>): ChatResponse {
         ? value.escalationReason.trim()
         : "";
     response.escalationReason = reason || "Passed to the director for review.";
+
+    // Only accept a name the knowledge base actually mentions, the same way a
+    // sourceId that matches no entry is dropped. An invented staff member on a
+    // routing card is worse than falling back to the director.
+    const claimed =
+      typeof value.routedTo === "string" ? value.routedTo.trim().slice(0, 60) : "";
+    response.routedTo = claimed && knowledgeText.includes(claimed)
+      ? claimed
+      : CENTER.director;
   }
 
   return response;
@@ -283,7 +307,9 @@ export async function POST(request: Request) {
       return NextResponse.json(unavailable("model response was not valid JSON"));
     }
 
-    return NextResponse.json(coerceChatResponse(parsed, validIds));
+    return NextResponse.json(
+      coerceChatResponse(parsed, validIds, entries.map((e) => e.body).join("\n")),
+    );
   } catch (error) {
     console.error("[chat] Unexpected failure calling OpenAI:", error);
     return NextResponse.json(unavailable("unexpected server error"));

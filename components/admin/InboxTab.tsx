@@ -104,7 +104,9 @@ export function InboxTab({ log, entries }: InboxTabProps) {
     () =>
       sorted.filter((item) => {
         if (filter === "attention") return needsAttention(item);
-        if (filter === "answered") return item.status === "answered";
+        // "Done" is the inverse of the queue, so a reviewed escalation lands
+        // here rather than falling between the two filters.
+        if (filter === "answered") return !needsAttention(item);
         return true;
       }),
     [sorted, filter],
@@ -187,8 +189,8 @@ export function InboxTab({ log, entries }: InboxTabProps) {
                 urgent={attentionCount > 0}
               />
               <FilterTab
-                label="Answered"
-                count={stats.answered}
+                label="Done"
+                count={stats.total - attentionCount}
                 active={filter === "answered"}
                 onClick={() => handleFilter("answered")}
               />

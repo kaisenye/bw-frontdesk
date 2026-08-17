@@ -5,6 +5,8 @@ import { CENTER } from "@/lib/seed";
 interface EscalationCardProps {
   answer: string;
   reason?: string;
+  /** Who the model handed this to. Falls back to the director. */
+  routedTo?: string;
 }
 
 const TEL_HREF = `tel:+1${CENTER.phone.replace(/\D/g, "")}`;
@@ -14,7 +16,8 @@ const TEL_HREF = `tel:+1${CENTER.phone.replace(/\D/g, "")}`;
  * handoff to a human feel like the intended outcome, not a failure, so it reads
  * as a routing receipt: who has it, and how to reach them now.
  */
-export function EscalationCard({ answer, reason }: EscalationCardProps) {
+export function EscalationCard({ answer, reason, routedTo }: EscalationCardProps) {
+  const handler = routedTo?.trim() || CENTER.director;
   return (
     <div
       className="overflow-hidden rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-warn-border bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
@@ -27,17 +30,14 @@ export function EscalationCard({ answer, reason }: EscalationCardProps) {
           className="h-1.5 w-1.5 shrink-0 rounded-full bg-warn"
         />
         <p className="text-[10px] font-semibold tracking-[0.08em] text-warn-text uppercase">
-          Routed to {CENTER.director}
+          Routed to {handler}
         </p>
       </div>
 
       <div className="px-4 py-3.5">
+        {/* The model's own text already says who has it and what happens next,
+            so the card adds the call affordance rather than repeating it. */}
         <p className="text-[15px] leading-[1.65] whitespace-pre-line text-ink">{answer}</p>
-
-        <p className="mt-2.5 text-[14px] leading-[1.65] text-ink-secondary">
-          {CENTER.director} has this one and will get back to you. Need someone right now?
-          Give the center a call.
-        </p>
 
         <a
           href={TEL_HREF}

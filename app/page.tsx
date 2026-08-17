@@ -499,7 +499,11 @@ function DeskMessage({
     >
       <div className="max-w-[88%] min-w-0">
         {response?.escalate ? (
-          <EscalationCard answer={message.text} reason={response.escalationReason} />
+          <EscalationCard
+            answer={message.text}
+            reason={response.escalationReason}
+            routedTo={response.routedTo}
+          />
         ) : (
           <div className="rounded-[var(--radius-bubble)] rounded-bl-[var(--radius-sm)] border border-line bg-surface px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <p className="text-[15px] leading-[1.65] whitespace-pre-line text-ink">
