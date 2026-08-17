@@ -10,45 +10,45 @@ import {
   clearThread,
   ensureSeeded,
   getEmptyThread,
-  getKnowledge,
+  getHandbook,
   getThreadSnapshot,
   newId,
   saveThread,
   subscribe,
 } from '@/lib/store'
-import type { AnswerStatus, ChatMessage, ChatResponse, KnowledgeEntry } from '@/lib/types'
+import type { AnswerStatus, ChatMessage, ChatResponse, HandbookEntry } from '@/lib/types'
 
 function statusFor(response: ChatResponse): AnswerStatus {
   if (response.escalate) return 'escalated'
   // Checked before the citation test: a thank-you has no source either, but it
   // is not a hole in the handbook and must not become operator homework.
-  if (response.needsKnowledge === false) return 'chitchat'
+  if (response.needsHandbook === false) return 'chitchat'
   if (response.sourceId === null) return 'gap'
   return 'answered'
 }
 
-const EMPTY_KNOWLEDGE: KnowledgeEntry[] = []
+const EMPTY_HANDBOOK: HandbookEntry[] = []
 
 /**
  * Cached so useSyncExternalStore sees a stable reference between store writes;
  * returning a fresh array every read would loop forever.
  */
-let knowledgeSnapshot: KnowledgeEntry[] = EMPTY_KNOWLEDGE
-let knowledgeRaw = ''
+let handbookSnapshot: HandbookEntry[] = EMPTY_HANDBOOK
+let handbookRaw = ''
 
-function getKnowledgeSnapshot(): KnowledgeEntry[] {
-  const all = getKnowledge()
+function getHandbookSnapshot(): HandbookEntry[] {
+  const all = getHandbook()
   const raw = JSON.stringify(all)
-  if (raw !== knowledgeRaw) {
-    knowledgeRaw = raw
-    knowledgeSnapshot = all
+  if (raw !== handbookRaw) {
+    handbookRaw = raw
+    handbookSnapshot = all
   }
-  return knowledgeSnapshot
+  return handbookSnapshot
 }
 
 /** localStorage is unavailable during SSR, so the server renders an empty KB. */
-function getServerKnowledgeSnapshot(): KnowledgeEntry[] {
-  return EMPTY_KNOWLEDGE
+function getServerHandbookSnapshot(): HandbookEntry[] {
+  return EMPTY_HANDBOOK
 }
 
 export default function ParentChatPage() {
@@ -72,7 +72,7 @@ export default function ParentChatPage() {
     })
   }, [])
 
-  const knowledge = useSyncExternalStore(subscribe, getKnowledgeSnapshot, getServerKnowledgeSnapshot)
+  const handbook = useSyncExternalStore(subscribe, getHandbookSnapshot, getServerHandbookSnapshot)
 
   const scrollAnchorRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -97,11 +97,11 @@ export default function ParentChatPage() {
     scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages])
 
-  const knowledgeById = useMemo(() => {
-    const map = new Map<string, KnowledgeEntry>()
-    for (const entry of knowledge) map.set(entry.id, entry)
+  const handbookById = useMemo(() => {
+    const map = new Map<string, HandbookEntry>()
+    for (const entry of handbook) map.set(entry.id, entry)
     return map
-  }, [knowledge])
+  }, [handbook])
 
   const ask = useCallback(
     async (question: string) => {
@@ -131,7 +131,7 @@ export default function ParentChatPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             question: trimmed,
-            knowledge: getKnowledge(),
+            handbook: getHandbook(),
             history: priorTurns,
           }),
         })
@@ -258,7 +258,7 @@ export default function ParentChatPage() {
               message.role === 'parent' ? (
                 <ParentBubble key={message.id} text={message.text} />
               ) : (
-                <DeskMessage key={message.id} message={message} knowledgeById={knowledgeById} onRetry={retry} />
+                <DeskMessage key={message.id} message={message} handbookById={handbookById} onRetry={retry} />
               ),
             )
           )}
@@ -377,11 +377,11 @@ function ParentBubble({ text }: { text: string }) {
 
 function DeskMessage({
   message,
-  knowledgeById,
+  handbookById,
   onRetry,
 }: {
   message: ChatMessage
-  knowledgeById: Map<string, KnowledgeEntry>
+  handbookById: Map<string, HandbookEntry>
   onRetry: (failedId: string, question: string) => void
 }) {
   if (message.pending) {
@@ -440,7 +440,7 @@ function DeskMessage({
   }
 
   const response = message.response
-  const sourceEntry = response?.sourceId != null ? knowledgeById.get(response.sourceId) : undefined
+  const sourceEntry = response?.sourceId != null ? handbookById.get(response.sourceId) : undefined
 
   return (
     <div className="flex justify-start" data-fd-anim style={{ animation: 'fd-rise 280ms var(--ease-soft) both' }}>

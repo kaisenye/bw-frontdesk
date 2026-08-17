@@ -10,9 +10,9 @@ Two views: `/` for parents, `/admin` for staff.
 
 ![Request flow from the parent chat page through the API route and trust gate to one of three outcomes](docs/architecture.png)
 
-A question travels from the chat page to a Next.js API route, which sends the operator-managed knowledge base to the model. The model returns an answer plus the `id` of the entry it claims to have used.
+A question travels from the chat page to a Next.js API route, which sends the operator-managed handbook to the model. The model returns an answer plus the `id` of the entry it claims to have used.
 
-**The trust gate is the point of the whole design.** The server checks that claimed `id` against the real knowledge base before anything reaches the parent, which produces three outcomes:
+**The trust gate is the point of the whole design.** The server checks that claimed `id` against the real handbook before anything reaches the parent, which produces three outcomes:
 
 | Outcome       | When                                                      | What the parent sees                                     |
 | ------------- | --------------------------------------------------------- | -------------------------------------------------------- |
@@ -22,7 +22,7 @@ A question travels from the chat page to a Next.js API route, which sends the op
 
 A `sourceId` the model invents that does not match a real entry is dropped rather than trusted, and confidence is downgraded to low. A fabricated citation would be worse than no citation, since the entire value of the chip is that a parent can verify it.
 
-The dashed line back to the knowledge base is the improvement loop: a gap becomes a one-click "Answer this" in the dashboard, and the front desk handles that question from then on.
+The dashed line back to the handbook is the improvement loop: a gap becomes a one-click "Answer this" in the dashboard, and the front desk handles that question from then on.
 
 ## Drafting the answer to a gap
 
@@ -57,7 +57,7 @@ sweeping unreviewed work into the commit. Use `git commit --no-verify` to bypass
 npm run eval
 ```
 
-17 cases against a running dev server: grounding, the policy-vs-individual-judgment boundary, escalation, honest gaps, follow-up context, prompt injection planted in conversation history, and the citation guard. Needs `npm run dev` in another terminal and `OPENAI_API_KEY` set. Exits non-zero on failure.
+21 cases against a running dev server: grounding, the policy-vs-individual-judgment boundary, escalation, honest gaps, small talk that must not become a gap, follow-up context, prompt injection planted in conversation history, and the citation guard. Needs `npm run dev` in another terminal and `OPENAI_API_KEY` set. Exits non-zero on failure.
 
 ## Running it
 
@@ -81,21 +81,25 @@ Without a key the app still runs. Every request degrades to the same warm "call 
 
 ```
 app/
-  page.tsx            parent chat
-  admin/page.tsx      operator control center
-  api/chat/route.ts   grounding, escalation rules, citation validation
+  page.tsx             parent chat
+  admin/page.tsx       operator control center
+  api/chat/route.ts    grounding, escalation rules, citation validation
+  api/draft/route.ts   proposes a handbook entry for a gap
 lib/
-  seed.ts             the fictional center's policies
-  store.ts            localStorage persistence for edits and the question log
+  seed.ts              the fictional center's handbook
+  store.ts             localStorage persistence for edits and the question log
   types.ts
+components/admin/      handbook editor, inbox, modal, toasts
+scripts/
+  eval.mjs             the regression gate for /api/chat
 docs/
-  architecture.svg    source for the diagram above
+  architecture.svg     source for the diagram above
 ```
 
 ## Scope notes
 
-Knowledge lives in seed JSON; operator edits and the question log persist in `localStorage`. That is deliberate for a prototype, since the demo is instant and has no infrastructure to stand up, but data is per-browser. `lib/store.ts` is a single module with a narrow interface, so swapping in a real database is a contained change.
+The handbook lives in seed JSON; operator edits and the question log persist in `localStorage`. That is deliberate for a prototype, since the demo is instant and has no infrastructure to stand up, but data is per-browser. `lib/store.ts` is a single module with a narrow interface, so swapping in a real database is a contained change.
 
-Answers are grounded by putting the full knowledge base in the prompt. That is the right call at ten entries and the wrong one at five hundred; a real center would need retrieval over the handbook and per-center answer evals to catch regressions when a policy changes.
+Answers are grounded by putting the whole handbook in the prompt. That is the right call at ten entries and the wrong one at five hundred; a real center would need retrieval over a real handbook and per-center answer evals to catch regressions when a policy changes.
 
 See [SUBMISSION.md](SUBMISSION.md) for the design rationale.

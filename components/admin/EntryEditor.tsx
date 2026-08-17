@@ -1,18 +1,18 @@
 'use client'
 
 import { useId, useRef, useState } from 'react'
-import type { KnowledgeCategory } from '@/lib/types'
+import type { HandbookCategory } from '@/lib/types'
 import { CATEGORIES, CATEGORY_LABEL } from './shared'
 
 export interface EntryDraft {
   title: string
-  category: KnowledgeCategory
+  category: HandbookCategory
   body: string
 }
 
 interface EntryEditorProps {
   initial: EntryDraft
-  /** Copy on the primary button, e.g. "Save entry" vs "Add to knowledge base". */
+  /** Copy on the primary button, e.g. "Save entry" vs "Add to handbook". */
   submitLabel: string
   bodyPlaceholder?: string
   /**
@@ -26,12 +26,12 @@ interface EntryEditorProps {
 }
 
 /**
- * Shared by the Knowledge tab (edit/new) and the Inbox gap composer, so writing
+ * Shared by the Handbook tab (edit/new) and the Inbox gap composer, so writing
  * an answer feels identical wherever the operator starts from.
  */
 export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onDirty, onSave, onCancel }: EntryEditorProps) {
   const [title, setTitle] = useState(initial.title)
-  const [category, setCategory] = useState<KnowledgeCategory>(initial.category)
+  const [category, setCategory] = useState<HandbookCategory>(initial.category)
   const [body, setBody] = useState(initial.body)
   const dirtyRef = useRef(false)
   const fieldId = useId()
@@ -93,7 +93,7 @@ export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onDirty, on
             value={category}
             onChange={(e) => {
               markDirty()
-              setCategory(e.target.value as KnowledgeCategory)
+              setCategory(e.target.value as HandbookCategory)
             }}
             className={`${controlClass} ${singleLine} sm:w-44`}
           >

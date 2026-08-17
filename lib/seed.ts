@@ -1,4 +1,4 @@
-import type { KnowledgeEntry, QuestionLogItem } from './types'
+import type { HandbookEntry, QuestionLogItem } from './types'
 
 export const CENTER = {
   name: 'Sunny Sprouts Learning Center',
@@ -10,7 +10,7 @@ export const CENTER = {
 
 const STAMP = '2026-08-10T09:00:00.000Z'
 
-export const SEED_KNOWLEDGE: KnowledgeEntry[] = [
+export const SEED_HANDBOOK: HandbookEntry[] = [
   {
     id: 'hours',
     title: 'Hours & Daily Schedule',
@@ -189,7 +189,7 @@ The fastest way to reach a teacher during the day is a message through the brigh
 
 /**
  * Pre-seeded so the operator inbox tells a story on first load:
- * healthy answered volume, one sensitive escalation, one real knowledge gap.
+ * healthy answered volume, one sensitive escalation, one real handbook gap.
  */
 export const SEED_LOG: QuestionLogItem[] = [
   {
@@ -245,7 +245,7 @@ export const SEED_LOG: QuestionLogItem[] = [
   {
     id: 'log-7',
     question: 'Do you offer any summer camp for older siblings?',
-    answer: 'No knowledge entry covers summer camp for school-age siblings.',
+    answer: 'No handbook entry covers summer camp for school-age siblings.',
     status: 'gap',
     sourceId: null,
     askedAt: '2026-08-15T18:11:00.000Z',
@@ -253,7 +253,7 @@ export const SEED_LOG: QuestionLogItem[] = [
   {
     id: 'log-8',
     question: "What's your policy on birthday treats in the classroom?",
-    answer: 'No knowledge entry covers classroom birthday celebrations.',
+    answer: 'No handbook entry covers classroom birthday celebrations.',
     status: 'gap',
     sourceId: null,
     askedAt: '2026-08-16T09:05:00.000Z',

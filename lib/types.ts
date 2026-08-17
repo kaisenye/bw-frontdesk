@@ -3,14 +3,14 @@
  * server and needs these values, and the admin components are client-only, so
  * the list lives here rather than in either.
  */
-export const KNOWLEDGE_CATEGORIES = ['hours', 'tuition', 'health', 'food', 'enrollment', 'policies', 'contact'] as const
+export const HANDBOOK_CATEGORIES = ['hours', 'tuition', 'health', 'food', 'enrollment', 'policies', 'contact'] as const
 
-export type KnowledgeCategory = (typeof KNOWLEDGE_CATEGORIES)[number]
+export type HandbookCategory = (typeof HANDBOOK_CATEGORIES)[number]
 
-export interface KnowledgeEntry {
+export interface HandbookEntry {
   id: string
   title: string
-  category: KnowledgeCategory
+  category: HandbookCategory
   body: string
   /** Set when an operator answered a gap from the inbox. */
   addedByOperator?: boolean
@@ -19,7 +19,7 @@ export interface KnowledgeEntry {
 
 /**
  * "chitchat" covers thanks, greetings, and anything else that needs no handbook
- * entry. Without it every "Thanks!" became a knowledge gap and told the operator
+ * entry. Without it every "Thanks!" became a handbook gap and told the operator
  * to go write a policy about gratitude.
  */
 export type AnswerStatus = 'answered' | 'escalated' | 'gap' | 'chitchat'
@@ -31,7 +31,7 @@ export interface QuestionLogItem {
   status: AnswerStatus
   sourceId: string | null
   askedAt: string
-  /** Set once an operator closes a gap by writing a knowledge entry. */
+  /** Set once an operator closes a gap by writing a handbook entry. */
   resolvedByEntryId?: string
   /**
    * Set when an operator confirms they have handled an escalation. The item
@@ -49,9 +49,9 @@ export interface ChatResponse {
   /**
    * False when the message is not really a question about the center (thanks,
    * greetings, small talk). Such a message has no citation, but it is not a
-   * knowledge gap and must never land in the operator's queue.
+   * handbook gap and must never land in the operator's queue.
    */
-  needsKnowledge?: boolean
+  needsHandbook?: boolean
   escalationReason?: string
   /**
    * Who the question is being handed to. The card used to always name the
@@ -62,7 +62,7 @@ export interface ChatResponse {
 }
 
 /**
- * A proposed knowledge entry, written from the center's existing entries so the
+ * A proposed handbook entry, written from the center's existing entries so the
  * operator edits instead of starting from a blank box. The operator is always
  * the author: this is a first pass they correct and own.
  */
@@ -70,7 +70,7 @@ export interface DraftResponse {
   ok: true
   /** Empty means the client keeps its own suggestTitle heuristic. */
   title: string
-  category: KnowledgeCategory
+  category: HandbookCategory
   body: string
   /** How well the existing entries supported the draft, not how true it is. */
   confidence: 'high' | 'low'

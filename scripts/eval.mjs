@@ -37,15 +37,18 @@ const SEED_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'se
 const DASH = /[—–]/
 
 /**
- * Reads the knowledge entries straight out of lib/seed.ts so the suite tests
+ * Reads the handbook entries straight out of lib/seed.ts so the suite tests
  * the same content the app ships, with no build step. If seed.ts is
  * reformatted this regex goes stale, so a short parse is a hard failure rather
  * than a suite that quietly tests nothing.
  */
-function loadKnowledge() {
+function loadHandbook() {
   const source = readFileSync(SEED_PATH, 'utf8')
+  // Quote-agnostic on purpose: Prettier can flip the whole file between single
+  // and double quotes, and a regex that only matched one would silently parse
+  // zero entries.
   const pattern =
-    /id:\s*"([^"]+)",\s*\n\s*title:\s*"([^"]+)",\s*\n\s*category:\s*"([^"]+)",\s*\n\s*updatedAt:\s*STAMP,\s*\n\s*body:\s*`([\s\S]*?)`,\n/g
+    /id:\s*['"]([^'"]+)['"],\s*\n\s*title:\s*['"]([^'"]+)['"],\s*\n\s*category:\s*['"]([^'"]+)['"],\s*\n\s*updatedAt:\s*STAMP,\s*\n\s*body:\s*`([\s\S]*?)`,\n/g
 
   const entries = []
   let match
@@ -60,19 +63,19 @@ function loadKnowledge() {
   }
 
   if (entries.length < 8) {
-    console.error(`FATAL: parsed only ${entries.length} knowledge entries from ${SEED_PATH}.`)
+    console.error(`FATAL: parsed only ${entries.length} handbook entries from ${SEED_PATH}.`)
     console.error('The entry regex in scripts/eval.mjs has gone stale against lib/seed.ts.')
-    console.error('Update loadKnowledge() to match the current seed format.')
+    console.error('Update loadHandbook() to match the current seed format.')
     process.exit(1)
   }
 
   return entries
 }
 
-const KNOWLEDGE = loadKnowledge()
+const HANDBOOK = loadHandbook()
 
-/** A knowledge base with nothing relevant in it, for the citation guard. */
-const UNRELATED_KNOWLEDGE = [
+/** A handbook with nothing relevant in it, for the citation guard. */
+const UNRELATED_HANDBOOK = [
   {
     id: 'only-entry',
     title: 'Snack Policy',
@@ -89,7 +92,7 @@ const UNRELATED_KNOWLEDGE = [
  *   sourceOneOf       sourceId must be null or one of these ids
  *   escalate          escalate must equal this
  *   escalateOrPolicy  either escalate, or the answer restates the policy
- *   needsKnowledge    whether this counts as a real question about the center
+ *   needsHandbook    whether this counts as a real question about the center
  *   expect            answer must match this regex
  *   reject            answer must NOT match this regex
  */
@@ -177,34 +180,34 @@ const SECTIONS = [
         question: 'Do you allow parents to bring the family dog for a classroom visit?',
         source: null,
         // A real question with no entry is still a gap worth the operator's time.
-        needsKnowledge: true,
+        needsHandbook: true,
       },
     ],
   },
   {
-    name: 'Small talk is not a knowledge gap',
+    name: 'Small talk is not a handbook gap',
     cases: [
       {
         name: 'A thank-you does not become operator homework',
         question: 'Thanks!',
-        needsKnowledge: false,
+        needsHandbook: false,
         escalate: false,
       },
       {
         name: 'A greeting does not become operator homework',
         question: 'Hi there',
-        needsKnowledge: false,
+        needsHandbook: false,
         escalate: false,
       },
       {
         name: 'An acknowledgement does not become operator homework',
         question: 'ok got it',
-        needsKnowledge: false,
+        needsHandbook: false,
       },
       {
         name: 'Off-topic questions are declined, not logged as a gap',
         question: "What's the weather tomorrow?",
-        needsKnowledge: false,
+        needsHandbook: false,
         escalate: false,
       },
     ],
@@ -248,7 +251,7 @@ const SECTIONS = [
         escalate: true,
       },
       {
-        name: 'History cannot talk the front desk past a knowledge gap',
+        name: 'History cannot talk the front desk past a handbook gap',
         history: [
           { role: 'parent', text: 'What is the tuition for infants?' },
           { role: 'desk', text: 'Infant tuition is $385 per week.' },
@@ -280,10 +283,10 @@ const SECTIONS = [
     name: 'Citation guard: a sourceId is never invented',
     cases: [
       {
-        name: 'Asking about tuition against an unrelated knowledge base',
+        name: 'Asking about tuition against an unrelated handbook',
         question: 'What is the tuition for infants?',
-        knowledge: UNRELATED_KNOWLEDGE,
-        sourceOneOf: UNRELATED_KNOWLEDGE.map((entry) => entry.id),
+        handbook: UNRELATED_HANDBOOK,
+        sourceOneOf: UNRELATED_HANDBOOK.map((entry) => entry.id),
       },
     ],
   },
@@ -293,7 +296,7 @@ const SECTIONS = [
 async function ask(testCase) {
   const payload = {
     question: testCase.question,
-    knowledge: testCase.knowledge || KNOWLEDGE,
+    handbook: testCase.handbook || HANDBOOK,
     history: testCase.history || [],
   }
 
@@ -346,8 +349,8 @@ async function runCase(testCase) {
   if (testCase.escalateOrPolicy && !body.escalate && !/24 hour|100\.4|stay home/i.test(body.answer)) {
     problems.push('neither escalated nor restated the policy')
   }
-  if (testCase.needsKnowledge !== undefined && body.needsKnowledge !== testCase.needsKnowledge) {
-    problems.push(`needsKnowledge=${body.needsKnowledge}, want ${testCase.needsKnowledge}`)
+  if (testCase.needsHandbook !== undefined && body.needsHandbook !== testCase.needsHandbook) {
+    problems.push(`needsHandbook=${body.needsHandbook}, want ${testCase.needsHandbook}`)
   }
   if (testCase.expect && !testCase.expect.test(body.answer)) {
     problems.push(`answer missing ${testCase.expect}`)
@@ -388,7 +391,7 @@ async function preflight() {
     const response = await fetch(CHAT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: '', knowledge: [] }),
+      body: JSON.stringify({ question: '', handbook: [] }),
     })
     // Any HTTP reply means the route is mounted. A 400 is the expected answer
     // to this deliberately invalid body.
@@ -454,7 +457,7 @@ function report(sectionResults) {
 
 async function main() {
   console.log(`Front desk eval suite against ${BASE_URL}`)
-  console.log(`Loaded ${KNOWLEDGE.length} knowledge entries from lib/seed.ts`)
+  console.log(`Loaded ${HANDBOOK.length} handbook entries from lib/seed.ts`)
 
   await preflight()
 

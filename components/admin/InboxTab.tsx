@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { markLogItemReviewed, needsAttention, newId, resolveLogItem, saveEntry } from '@/lib/store'
-import type { DraftResponse, KnowledgeEntry, QuestionLogItem } from '@/lib/types'
+import type { DraftResponse, HandbookEntry, QuestionLogItem } from '@/lib/types'
 import { EntryEditor, type EntryDraft } from './EntryEditor'
 import { Modal } from './Modal'
 import { useGapDraft } from './useGapDraft'
@@ -11,12 +11,12 @@ import { CategoryBadge, StatusBadge, relativeTime } from './shared'
 
 interface InboxTabProps {
   log: QuestionLogItem[]
-  entries: KnowledgeEntry[]
+  entries: HandbookEntry[]
 }
 
 type InboxFilter = 'all' | 'attention' | 'answered'
 
-/** Leading filler that carries no meaning in a knowledge-base title. */
+/** Leading filler that carries no meaning in a handbook-base title. */
 const LEADING_FILLER =
   /^(do|does|did|can|could|is|are|was|were|what|how|when|where|why|will|would|should|you|your|i|my|our|we|the|a|an|any|there)(?:'\w+)?\s+/i
 
@@ -108,7 +108,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
   }, [sorted])
 
   const entryById = useMemo(() => {
-    const map = new Map<string, KnowledgeEntry>()
+    const map = new Map<string, HandbookEntry>()
     for (const e of entries) map.set(e.id, e)
     return map
   }, [entries])
@@ -148,7 +148,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
 
   /** The improvement loop: write the missing entry, then close the gap it came from. */
   function handleAnswerGap(item: QuestionLogItem, draft: EntryDraft) {
-    const entry: KnowledgeEntry = {
+    const entry: HandbookEntry = {
       id: newId('kb'),
       title: draft.title,
       category: draft.category,
@@ -377,9 +377,9 @@ function DraftNotice({ draft }: { draft: DraftResponse }) {
 
 interface DetailPaneProps {
   item: QuestionLogItem
-  source: KnowledgeEntry | undefined
-  /** The whole knowledge base, sent along so a gap draft can be grounded in it. */
-  entries: KnowledgeEntry[]
+  source: HandbookEntry | undefined
+  /** The whole handbook, sent along so a gap draft can be grounded in it. */
+  entries: HandbookEntry[]
   composing: boolean
   celebrating: boolean
   reviewed: boolean
@@ -512,8 +512,8 @@ function DetailPane({
         {item.status === 'gap' ? (
           <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-gap-border bg-gap-quiet px-3 py-2.5">
             <p className="flex-1 text-[12px] text-gap-text">
-              <span className="font-medium">Nothing in the knowledge base covers this.</span> Write it once and the
-              front desk takes it from here.
+              <span className="font-medium">Nothing in the handbook covers this.</span> Write it once and the front desk
+              takes it from here.
             </p>
             <button
               type="button"
@@ -572,7 +572,7 @@ function DetailPane({
               <EntryEditor
                 key={editorKey}
                 initial={initialDraft}
-                submitLabel="Add to knowledge base"
+                submitLabel="Add to handbook"
                 bodyPlaceholder="Answer the parent's question here, the way you'd say it in person."
                 onDirty={() => setEditorDirty(true)}
                 onSave={onSaveAnswer}

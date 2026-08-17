@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { DraftResponse, DraftResult, KnowledgeEntry } from '@/lib/types'
+import type { DraftResponse, DraftResult, HandbookEntry } from '@/lib/types'
 
 type DraftState =
   { status: 'idle' } | { status: 'loading' } | { status: 'ready'; draft: DraftResponse } | { status: 'failed' }
@@ -11,7 +11,7 @@ type DraftState =
  * instantly with a blank editor either way, so a slow or failed draft never
  * stands between the operator and writing the answer themselves.
  */
-export function useGapDraft(question: string, knowledge: KnowledgeEntry[], active: boolean): DraftState {
+export function useGapDraft(question: string, handbook: HandbookEntry[], active: boolean): DraftState {
   const [state, setState] = useState<DraftState>({ status: 'idle' })
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export function useGapDraft(question: string, knowledge: KnowledgeEntry[], activ
         const res = await fetch('/api/draft', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question, knowledge }),
+          body: JSON.stringify({ question, handbook }),
           signal: controller.signal,
         })
         if (!res.ok) throw new Error(`Draft request failed: ${res.status}`)
@@ -46,7 +46,7 @@ export function useGapDraft(question: string, knowledge: KnowledgeEntry[], activ
       live = false
       controller.abort()
     }
-  }, [active, question, knowledge])
+  }, [active, question, handbook])
 
   return state
 }

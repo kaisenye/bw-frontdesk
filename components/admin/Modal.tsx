@@ -11,7 +11,7 @@ interface ModalProps {
 }
 
 /**
- * A focused editing surface for the knowledge base. Editing an entry is a
+ * A focused editing surface for the handbook. Editing an entry is a
  * commit-or-cancel decision, so it earns a modal: inline expansion pushed the
  * surrounding rows around while the operator typed.
  *

@@ -1,10 +1,10 @@
 'use client'
 
 import { useId, useState } from 'react'
-import type { KnowledgeEntry } from '@/lib/types'
+import type { HandbookEntry } from '@/lib/types'
 
 interface SourceChipProps {
-  entry: KnowledgeEntry
+  entry: HandbookEntry
 }
 
 /**

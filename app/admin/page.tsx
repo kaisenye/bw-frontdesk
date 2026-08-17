@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { InboxTab } from '@/components/admin/InboxTab'
-import { KnowledgeTab } from '@/components/admin/KnowledgeTab'
+import { HandbookTab } from '@/components/admin/HandbookTab'
 import { Toaster } from '@/components/admin/Toaster'
 import { CENTER } from '@/lib/seed'
-import { ensureSeeded, getKnowledge, getLog, needsAttention, resetDemo, subscribe } from '@/lib/store'
+import { ensureSeeded, getHandbook, getLog, needsAttention, resetDemo, subscribe } from '@/lib/store'
 
-type Tab = 'knowledge' | 'inbox'
+type Tab = 'handbook' | 'inbox'
 
 const EMPTY: never[] = []
 
@@ -37,11 +37,11 @@ function createSnapshotCache<T>(read: () => T[]) {
   }
 }
 
-const knowledgeCache = createSnapshotCache(getKnowledge)
+const handbookCache = createSnapshotCache(getHandbook)
 const logCache = createSnapshotCache(getLog)
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<Tab>('knowledge')
+  const [tab, setTab] = useState<Tab>('handbook')
   const [confirmingReset, setConfirmingReset] = useState(false)
 
   // Seeding only touches the external store, so it triggers no render cascade.
@@ -52,7 +52,7 @@ export default function AdminPage() {
 
   // Reading through the store keeps this view live when the parent chat page
   // logs a question.
-  const entries = useSyncExternalStore(subscribe, knowledgeCache.getSnapshot, knowledgeCache.getServerSnapshot)
+  const entries = useSyncExternalStore(subscribe, handbookCache.getSnapshot, handbookCache.getServerSnapshot)
   const log = useSyncExternalStore(subscribe, logCache.getSnapshot, logCache.getServerSnapshot)
 
   // Server render and the first client paint both have nothing yet; the seed
@@ -100,13 +100,13 @@ export default function AdminPage() {
             {/* Underlined tabs sit on the header's bottom border, Linear style. */}
             <nav className="-mb-px flex gap-1" aria-label="Control center sections">
               <TabButton
-                active={tab === 'knowledge'}
-                onClick={() => setTab('knowledge')}
-                controls="panel-knowledge"
-                id="tab-knowledge"
+                active={tab === 'handbook'}
+                onClick={() => setTab('handbook')}
+                controls="panel-handbook"
+                id="tab-handbook"
               >
-                Knowledge
-                <TabCount active={tab === 'knowledge'}>{entries.length}</TabCount>
+                Handbook
+                <TabCount active={tab === 'handbook'}>{entries.length}</TabCount>
               </TabButton>
               <TabButton active={tab === 'inbox'} onClick={() => setTab('inbox')} controls="panel-inbox" id="tab-inbox">
                 Inbox
@@ -125,9 +125,9 @@ export default function AdminPage() {
         <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
           {!ready ? (
             <p className="py-16 text-center text-[13px] text-ink-muted">Loading your center…</p>
-          ) : tab === 'knowledge' ? (
-            <section id="panel-knowledge" role="tabpanel" aria-labelledby="tab-knowledge">
-              <KnowledgeTab entries={entries} />
+          ) : tab === 'handbook' ? (
+            <section id="panel-handbook" role="tabpanel" aria-labelledby="tab-handbook">
+              <HandbookTab entries={entries} />
             </section>
           ) : (
             <section id="panel-inbox" role="tabpanel" aria-labelledby="tab-inbox">

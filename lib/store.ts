@@ -1,9 +1,15 @@
 'use client'
 
-import { SEED_KNOWLEDGE, SEED_LOG } from './seed'
-import type { ChatMessage, KnowledgeEntry, QuestionLogItem } from './types'
+import { SEED_HANDBOOK, SEED_LOG } from './seed'
+import type { ChatMessage, HandbookEntry, QuestionLogItem } from './types'
 
-const KB_KEY = 'sunny-sprouts:kb:v1'
+/**
+ * Renamed from the old "kb" key when the concept became the Handbook. A browser
+ * that used the previous build reseeds rather than migrating, which is the right
+ * trade for a prototype: writing a migration would outweigh the demo data it
+ * would save.
+ */
+const HANDBOOK_KEY = 'sunny-sprouts:handbook:v1'
 const LOG_KEY = 'sunny-sprouts:log:v1'
 const THREAD_KEY = 'sunny-sprouts:thread:v1'
 
@@ -60,23 +66,31 @@ export function subscribe(listener: () => void) {
   }
 }
 
+/** The pre-rename handbook key. Swept up so it does not linger as dead data. */
+const LEGACY_HANDBOOK_KEY = 'sunny-sprouts:kb:v1'
+
 /** Seeds on first visit so a reviewer never lands on an empty demo. */
 export function ensureSeeded() {
   if (!isBrowser()) return
-  if (window.localStorage.getItem(KB_KEY) === null) {
-    write(KB_KEY, SEED_KNOWLEDGE)
+  try {
+    window.localStorage.removeItem(LEGACY_HANDBOOK_KEY)
+  } catch {
+    // Nothing to do; the stale key is harmless if it cannot be removed.
+  }
+  if (window.localStorage.getItem(HANDBOOK_KEY) === null) {
+    write(HANDBOOK_KEY, SEED_HANDBOOK)
   }
   if (window.localStorage.getItem(LOG_KEY) === null) {
     write(LOG_KEY, SEED_LOG)
   }
 }
 
-export function getKnowledge(): KnowledgeEntry[] {
-  return read<KnowledgeEntry[]>(KB_KEY, SEED_KNOWLEDGE)
+export function getHandbook(): HandbookEntry[] {
+  return read<HandbookEntry[]>(HANDBOOK_KEY, SEED_HANDBOOK)
 }
 
-export function saveEntry(entry: KnowledgeEntry) {
-  const all = getKnowledge()
+export function saveEntry(entry: HandbookEntry) {
+  const all = getHandbook()
   const index = all.findIndex((e) => e.id === entry.id)
   const next = { ...entry, updatedAt: new Date().toISOString() }
   if (index >= 0) {
@@ -84,14 +98,14 @@ export function saveEntry(entry: KnowledgeEntry) {
   } else {
     all.push(next)
   }
-  write(KB_KEY, all)
+  write(HANDBOOK_KEY, all)
   return next
 }
 
 export function deleteEntry(id: string) {
   write(
-    KB_KEY,
-    getKnowledge().filter((e) => e.id !== id),
+    HANDBOOK_KEY,
+    getHandbook().filter((e) => e.id !== id),
   )
 }
 
@@ -137,7 +151,7 @@ export function markLogItemReviewed(logId: string) {
 }
 
 export function resetDemo() {
-  write(KB_KEY, SEED_KNOWLEDGE)
+  write(HANDBOOK_KEY, SEED_HANDBOOK)
   write(LOG_KEY, SEED_LOG)
   clearThread()
 }

@@ -2,28 +2,28 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { deleteEntry, newId, saveEntry } from '@/lib/store'
-import type { KnowledgeCategory, KnowledgeEntry } from '@/lib/types'
+import type { HandbookCategory, HandbookEntry } from '@/lib/types'
 import { EntryEditor, type EntryDraft } from './EntryEditor'
 import { Modal } from './Modal'
 import { useToast } from './Toaster'
 import { CATEGORIES, CATEGORY_LABEL, CategoryBadge, OperatorBadge, relativeTime } from './shared'
 
-interface KnowledgeTabProps {
-  entries: KnowledgeEntry[]
+interface HandbookTabProps {
+  entries: HandbookEntry[]
 }
 
-type CategoryFilter = KnowledgeCategory | 'all'
+type CategoryFilter = HandbookCategory | 'all'
 
 /**
  * One editor is open, or none. Modelling this as a single value (rather than a
  * "creating" flag next to an "editingId") makes the two states mutually
  * exclusive by construction, so no combination of clicks can open both.
  */
-type EditorState = { mode: 'new' } | { mode: 'edit'; entry: KnowledgeEntry } | null
+type EditorState = { mode: 'new' } | { mode: 'edit'; entry: HandbookEntry } | null
 
 const NEW_DRAFT: EntryDraft = { title: '', category: 'policies', body: '' }
 
-export function KnowledgeTab({ entries }: KnowledgeTabProps) {
+export function HandbookTab({ entries }: HandbookTabProps) {
   const [query, setQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   const [editorState, setEditorState] = useState<EditorState>(null)
@@ -50,7 +50,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
   // Stable identity: Modal takes onClose as an effect dependency.
   const closeEditor = useCallback(() => setEditorState(null), [])
 
-  function handleSaveExisting(entry: KnowledgeEntry, draft: EntryDraft) {
+  function handleSaveExisting(entry: HandbookEntry, draft: EntryDraft) {
     saveEntry({ ...entry, ...draft })
     closeEditor()
     flashSaved(entry.id)
@@ -58,7 +58,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
   }
 
   function handleCreate(draft: EntryDraft) {
-    const entry: KnowledgeEntry = {
+    const entry: HandbookEntry = {
       id: newId('kb'),
       title: draft.title,
       category: draft.category,
@@ -88,7 +88,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <label htmlFor="kb-search" className="sr-only">
-            Search the knowledge base
+            Search the handbook
           </label>
           <svg
             viewBox="0 0 20 20"
@@ -163,7 +163,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
           first entry's draft. */}
       <Modal
         open={editorState?.mode === 'new'}
-        title="New knowledge entry"
+        title="New handbook entry"
         description="Write it once and the front desk can use it from here on."
         onClose={closeEditor}
       >

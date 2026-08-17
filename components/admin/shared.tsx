@@ -1,12 +1,12 @@
 'use client'
 
-import { KNOWLEDGE_CATEGORIES } from '@/lib/types'
-import type { AnswerStatus, KnowledgeCategory } from '@/lib/types'
+import { HANDBOOK_CATEGORIES } from '@/lib/types'
+import type { AnswerStatus, HandbookCategory } from '@/lib/types'
 
 /** Re-exported so selects keep importing from one place. */
-export const CATEGORIES: readonly KnowledgeCategory[] = KNOWLEDGE_CATEGORIES
+export const CATEGORIES: readonly HandbookCategory[] = HANDBOOK_CATEGORIES
 
-export const CATEGORY_LABEL: Record<KnowledgeCategory, string> = {
+export const CATEGORY_LABEL: Record<HandbookCategory, string> = {
   hours: 'Hours',
   tuition: 'Tuition',
   health: 'Health',
@@ -21,7 +21,7 @@ export const CATEGORY_LABEL: Record<KnowledgeCategory, string> = {
  * spend the whole palette on taxonomy, so all of them get one quiet neutral
  * chip and the semantic colors stay meaningful where they do appear.
  */
-export function CategoryBadge({ category }: { category: KnowledgeCategory }) {
+export function CategoryBadge({ category }: { category: HandbookCategory }) {
   return (
     <span className="inline-flex shrink-0 items-center rounded-[var(--radius-sm)] border border-line bg-surface-sunken px-1.5 py-px text-[11px] font-medium text-ink-secondary">
       {CATEGORY_LABEL[category]}
