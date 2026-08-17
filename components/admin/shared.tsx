@@ -1,17 +1,10 @@
 "use client";
 
+import { KNOWLEDGE_CATEGORIES } from "@/lib/types";
 import type { AnswerStatus, KnowledgeCategory } from "@/lib/types";
 
-/** Single source of truth for the category union so selects stay in sync with the type. */
-export const CATEGORIES: KnowledgeCategory[] = [
-  "hours",
-  "tuition",
-  "health",
-  "food",
-  "enrollment",
-  "policies",
-  "contact",
-];
+/** Re-exported so selects keep importing from one place. */
+export const CATEGORIES: readonly KnowledgeCategory[] = KNOWLEDGE_CATEGORIES;
 
 export const CATEGORY_LABEL: Record<KnowledgeCategory, string> = {
   hours: "Hours",
@@ -74,6 +67,11 @@ const STATUS_META: Record<
     label: "Needs an answer",
     className: "border-gap-border bg-gap-quiet text-gap-text",
     dot: "bg-gap",
+  },
+  chitchat: {
+    label: "Just saying hi",
+    className: "border-line bg-surface-sunken text-ink-muted",
+    dot: "bg-ink-muted",
   },
 };
 

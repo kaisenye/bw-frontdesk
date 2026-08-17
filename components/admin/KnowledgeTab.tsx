@@ -5,6 +5,7 @@ import { deleteEntry, newId, saveEntry } from "@/lib/store";
 import type { KnowledgeCategory, KnowledgeEntry } from "@/lib/types";
 import { EntryEditor, type EntryDraft } from "./EntryEditor";
 import { Modal } from "./Modal";
+import { useToast } from "./Toaster";
 import { CATEGORIES, CATEGORY_LABEL, CategoryBadge, OperatorBadge, relativeTime } from "./shared";
 
 interface KnowledgeTabProps {
@@ -28,6 +29,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
   const [editorState, setEditorState] = useState<EditorState>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const toast = useToast();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -57,6 +59,7 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
     saveEntry({ ...entry, ...draft });
     closeEditor();
     flashSaved(entry.id);
+    toast(`Saved “${draft.title}”.`, "good");
   }
 
   function handleCreate(draft: EntryDraft) {
@@ -70,11 +73,15 @@ export function KnowledgeTab({ entries }: KnowledgeTabProps) {
     saveEntry(entry);
     closeEditor();
     flashSaved(entry.id);
+    toast(`Added “${draft.title}”. The front desk can use it now.`, "good");
   }
 
   function handleDelete(id: string) {
+    // Read the title before the row disappears, so the toast can name it.
+    const title = entries.find((e) => e.id === id)?.title ?? "That entry";
     deleteEntry(id);
     setConfirmingDeleteId(null);
+    toast(`Deleted “${title}”.`, "warn");
   }
 
   const rowAction =

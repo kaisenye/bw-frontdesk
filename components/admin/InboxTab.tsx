@@ -8,9 +8,11 @@ import {
   resolveLogItem,
   saveEntry,
 } from "@/lib/store";
-import type { KnowledgeEntry, QuestionLogItem } from "@/lib/types";
+import type { DraftResponse, KnowledgeEntry, QuestionLogItem } from "@/lib/types";
 import { EntryEditor, type EntryDraft } from "./EntryEditor";
 import { Modal } from "./Modal";
+import { useGapDraft } from "./useGapDraft";
+import { useToast } from "./Toaster";
 import { CategoryBadge, StatusBadge, relativeTime } from "./shared";
 
 interface InboxTabProps {
@@ -76,6 +78,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
   const [justResolvedId, setJustResolvedId] = useState<string | null>(null);
   // Mobile only: which pane the operator is looking at right now.
   const [mobileView, setMobileView] = useState<"list" | "detail">("list");
+  const toast = useToast();
 
   const sorted = useMemo(
     () =>
@@ -86,10 +89,13 @@ export function InboxTab({ log, entries }: InboxTabProps) {
   );
 
   const stats = useMemo(() => {
-    const total = sorted.length;
-    const answered = sorted.filter((i) => i.status === "answered").length;
-    const escalated = sorted.filter((i) => i.status === "escalated").length;
-    const gaps = sorted.filter((i) => i.status === "gap").length;
+    // Small talk is excluded from the denominator: a "thanks" is not a question
+    // the front desk failed to answer, so counting it would understate the rate.
+    const questions = sorted.filter((i) => i.status !== "chitchat");
+    const total = questions.length;
+    const answered = questions.filter((i) => i.status === "answered").length;
+    const escalated = questions.filter((i) => i.status === "escalated").length;
+    const gaps = questions.filter((i) => i.status === "gap").length;
     const answeredPct = total === 0 ? 0 : Math.round((answered / total) * 100);
     return { total, answered, escalated, gaps, answeredPct };
   }, [sorted]);
@@ -152,6 +158,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
 
     setComposingId(null);
     setJustResolvedId(item.id);
+    toast(`Added “${draft.title}”. The front desk can answer this one now.`, "good");
 
     window.setTimeout(() => {
       setJustResolvedId((current) => (current === item.id ? null : current));
@@ -178,7 +185,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
             >
               <FilterTab
                 label="All"
-                count={stats.total}
+                count={sorted.length}
                 active={filter === "all"}
                 onClick={() => handleFilter("all")}
               />
@@ -191,7 +198,7 @@ export function InboxTab({ log, entries }: InboxTabProps) {
               />
               <FilterTab
                 label="Done"
-                count={stats.total - attentionCount}
+                count={sorted.length - attentionCount}
                 active={filter === "answered"}
                 onClick={() => handleFilter("answered")}
               />
@@ -231,13 +238,17 @@ export function InboxTab({ log, entries }: InboxTabProps) {
                 key={selected.id}
                 item={selected}
                 source={selected.sourceId ? entryById.get(selected.sourceId) : undefined}
+                entries={entries}
                 composing={composingId === selected.id}
                 celebrating={justResolvedId === selected.id}
                 reviewed={Boolean(selected.reviewedAt)}
                 onStartComposing={() => setComposingId(selected.id)}
                 onCancelComposing={stopComposing}
                 onSaveAnswer={(draft) => handleAnswerGap(selected, draft)}
-                onMarkReviewed={() => markLogItemReviewed(selected.id)}
+                onMarkReviewed={() => {
+                  markLogItemReviewed(selected.id);
+                  toast("Marked reviewed. It's out of your queue.");
+                }}
                 onBack={() => setMobileView("list")}
               />
             ) : (
@@ -314,6 +325,7 @@ const STATUS_TEXT = {
   answered: { label: "Answered", dot: "bg-accent", text: "text-ink-muted" },
   escalated: { label: "Sent to staff", dot: "bg-warn", text: "text-warn-text" },
   gap: { label: "Needs an answer", dot: "bg-gap", text: "text-gap-text" },
+  chitchat: { label: "Just saying hi", dot: "bg-ink-muted", text: "text-ink-muted" },
 } as const;
 
 const REVIEWED_TEXT = {
@@ -336,9 +348,50 @@ function StatusLine({ item }: { item: QuestionLogItem }) {
   );
 }
 
+/**
+ * The draft's own disclosure. The banner names the consequence rather than the
+ * mechanism, and the assumptions list is the model telling on itself, which is
+ * the same reason the parent-facing answers carry a source chip.
+ */
+function DraftNotice({ draft }: { draft: DraftResponse }) {
+  return (
+    <section className="shrink-0 rounded-[var(--radius)] border border-accent-border bg-accent-quiet px-3 py-2.5">
+      <h3 className="text-[12px] font-medium text-accent-text">
+        Suggested draft, written from your other entries
+      </h3>
+      <p className="mt-1 text-[12px] leading-snug text-accent-text/80">
+        Read it before you save. Parents will see this word for word.
+      </p>
+
+      {draft.assumptions.length > 0 ? (
+        <>
+          <h4 className="mt-2.5 text-[11px] font-semibold tracking-[0.06em] text-accent-text uppercase">
+            Check these before saving
+          </h4>
+          <ul className="mt-1 flex flex-col gap-1">
+            {draft.assumptions.map((note) => (
+              <li
+                key={note}
+                className="flex gap-1.5 text-[12px] leading-snug text-ink-secondary"
+              >
+                <span aria-hidden="true" className="text-accent-text">
+                  •
+                </span>
+                {note}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 interface DetailPaneProps {
   item: QuestionLogItem;
   source: KnowledgeEntry | undefined;
+  /** The whole knowledge base, sent along so a gap draft can be grounded in it. */
+  entries: KnowledgeEntry[];
   composing: boolean;
   celebrating: boolean;
   reviewed: boolean;
@@ -352,6 +405,7 @@ interface DetailPaneProps {
 function DetailPane({
   item,
   source,
+  entries,
   composing,
   celebrating,
   reviewed,
@@ -361,6 +415,29 @@ function DetailPane({
   onMarkReviewed,
   onBack,
 }: DetailPaneProps) {
+  const draftState = useGapDraft(item.question, entries, composing && item.status === "gap");
+  /** Set once the operator types, so an arriving draft never eats their work. */
+  const [editorDirty, setEditorDirty] = useState(false);
+  /** Set when the operator accepts a draft that landed after they started typing. */
+  const [draftAccepted, setDraftAccepted] = useState(false);
+
+  const draft = draftState.status === "ready" ? draftState.draft : null;
+  // Applied silently while the editor is untouched, by request once it is not.
+  const applied = draft !== null && (!editorDirty || draftAccepted);
+  const offerDraft = draft !== null && editorDirty && !draftAccepted;
+
+  const initialDraft: EntryDraft = applied
+    ? {
+        title: draft.title.trim() || suggestTitle(item.question),
+        category: draft.category,
+        body: draft.body,
+      }
+    : { title: suggestTitle(item.question), category: "policies", body: "" };
+
+  // Remounting is the only way to push new values into EntryEditor, which holds
+  // its own state after mount. The key flips exactly once, when a draft applies.
+  const editorKey = applied ? "drafted" : "blank";
+
   return (
     <article className="flex min-h-0 flex-1 flex-col bg-surface">
       {/* Fixed above the scrolling body, so the status and timestamp stay put
@@ -480,14 +557,46 @@ function DetailPane({
                   {item.question}
                 </p>
               </section>
+
+              {draftState.status === "loading" ? (
+                <p
+                  role="status"
+                  className="shrink-0 text-[12px] text-ink-muted"
+                >
+                  Reading your other entries to suggest a draft…
+                </p>
+              ) : null}
+
+              {draftState.status === "failed" ? (
+                <p className="shrink-0 text-[12px] text-ink-muted">
+                  Couldn&rsquo;t draft this one. Write it in your own words and it&rsquo;ll
+                  work the same.
+                </p>
+              ) : null}
+
+              {offerDraft ? (
+                <div className="flex shrink-0 flex-wrap items-center gap-2.5 rounded-[var(--radius)] border border-accent-border bg-accent-quiet px-3 py-2.5">
+                  <p className="flex-1 text-[12px] text-accent-text">
+                    A suggested draft is ready. Using it replaces what you&rsquo;ve typed.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setDraftAccepted(true)}
+                    className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius)] bg-accent px-3 text-[12px] font-medium text-white transition-[background-color] duration-[140ms] [transition-timing-function:var(--ease)] hover:bg-accent-hover sm:h-7 sm:min-h-0"
+                  >
+                    Use the draft
+                  </button>
+                </div>
+              ) : null}
+
+              {applied && draft ? <DraftNotice draft={draft} /> : null}
+
               <EntryEditor
-                initial={{
-                  title: suggestTitle(item.question),
-                  category: "policies",
-                  body: "",
-                }}
+                key={editorKey}
+                initial={initialDraft}
                 submitLabel="Add to knowledge base"
                 bodyPlaceholder="Answer the parent's question here, the way you'd say it in person."
+                onDirty={() => setEditorDirty(true)}
                 onSave={onSaveAnswer}
                 onCancel={onCancelComposing}
               />

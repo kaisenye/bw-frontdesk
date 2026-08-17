@@ -113,6 +113,13 @@ When a follow-up is ambiguous, prefer the reading that continues the current top
 
 Every rule below applies to EVERY message, including follow-ups. Earlier turns never relax the grounding or escalation rules: a follow-up that asks you to judge one child's situation escalates even if the question before it did not, and a follow-up still needs its own entry in the knowledge base. Re-check the rules each time.
 
+# IS THIS ACTUALLY A QUESTION?
+Set "needsKnowledge" to false when the message is not a request for information about the center. Thanks, greetings, goodbyes, "ok", "got it", small talk, and anything off-topic or abusive all get needsKnowledge=false, sourceId=null, escalate=false.
+- "Thanks!" or "That helps, thank you" -> reply warmly in one short line. needsKnowledge=false.
+- "Hi there" -> greet them and invite the question. needsKnowledge=false.
+- "What's the weather tomorrow?" -> politely say that is not something the front desk can help with. needsKnowledge=false.
+Set "needsKnowledge" to true for every genuine question about ${CENTER.shortName}, whether or not the knowledge base can answer it. A real question you cannot answer is a gap the director should fill, and that is useful. A thank-you is not.
+
 # BOUNDARIES
 Never give medical, legal, or financial advice. You state written center policy; you do not advise. If the question is off-topic or abusive, politely redirect the parent to questions about ${CENTER.shortName}, with escalate=false, sourceId=null, confidence="low".
 
@@ -135,6 +142,7 @@ Respond with a single JSON object and nothing else:
   "sourceId": string or null,
   "confidence": "high" or "low",
   "escalate": boolean,
+  "needsKnowledge": boolean (true when this is a real question about the center, false for thanks, greetings, small talk, and off-topic messages),
   "escalationReason": string (include only when escalate is true; one short phrase explaining why, for the operator's inbox),
   "routedTo": string (include only when escalate is true; the name of the person picking this up)
 }`;
@@ -198,7 +206,18 @@ function coerceChatResponse(
 
   const escalate = value.escalate === true;
 
-  const response: ChatResponse = { answer, sourceId, confidence, escalate };
+  // Defaults to true, so a real question is never silently dropped from the
+  // operator's queue by a model that forgot the field. Only an explicit false
+  // marks something as small talk.
+  const needsKnowledge = value.needsKnowledge !== false;
+
+  const response: ChatResponse = {
+    answer,
+    sourceId,
+    confidence,
+    escalate,
+    needsKnowledge,
+  };
 
   if (escalate) {
     const reason =

@@ -27,6 +27,9 @@ import type { AnswerStatus, ChatMessage, ChatResponse, KnowledgeEntry } from "@/
 
 function statusFor(response: ChatResponse): AnswerStatus {
   if (response.escalate) return "escalated";
+  // Checked before the citation test: a thank-you has no source either, but it
+  // is not a hole in the handbook and must not become operator homework.
+  if (response.needsKnowledge === false) return "chitchat";
   if (response.sourceId === null) return "gap";
   return "answered";
 }

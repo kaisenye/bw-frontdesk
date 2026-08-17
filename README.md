@@ -24,6 +24,28 @@ A `sourceId` the model invents that does not match a real entry is dropped rathe
 
 The dashed line back to the knowledge base is the improvement loop: a gap becomes a one-click "Answer this" in the dashboard, and the front desk handles that question from then on.
 
+## Drafting the answer to a gap
+
+Opening a gap calls a second route, `/api/draft`, which proposes the missing entry from the center's existing policies. It is kept separate from `/api/chat` on purpose: chat's prompt is what the eval suite validates, and a shared route would put that behavior one edit away from a regression.
+
+The rule that makes a draft usable is that it may **never invent a specific**. No price, time, age range, or staff name that isn't already on file. Where one is genuinely needed, it writes a bracketed placeholder and repeats it in an `assumptions` list the operator sees as a checklist:
+
+> Summer camp for older siblings is [available/not available].
+> [Add the eligible age range, summer camp dates, hours, and weekly rate].
+> For details, call (512) 555-0134 or send a message through the brightwheel app.
+
+The phone number and the brightwheel app came from other entries. Everything the center hasn't decided is a bracket.
+
+Two failure postures, deliberately opposite. Chat never fails loudly, because a parent sees it. Drafting fails visibly, because the operator needs to know to write it themselves, and a fabricated policy is the one output this refuses to produce.
+
+## Evals
+
+```bash
+npm run eval
+```
+
+17 cases against a running dev server: grounding, the policy-vs-individual-judgment boundary, escalation, honest gaps, follow-up context, prompt injection planted in conversation history, and the citation guard. Needs `npm run dev` in another terminal and `OPENAI_API_KEY` set. Exits non-zero on failure.
+
 ## Running it
 
 ```bash

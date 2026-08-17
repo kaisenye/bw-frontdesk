@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import type { KnowledgeCategory } from '@/lib/types'
 import { CATEGORIES, CATEGORY_LABEL } from './shared'
 
@@ -15,6 +15,12 @@ interface EntryEditorProps {
   /** Copy on the primary button, e.g. "Save entry" vs "Add to knowledge base". */
   submitLabel: string
   bodyPlaceholder?: string
+  /**
+   * Fired once, on the first edit to any field. Lets a caller that is waiting on
+   * an async draft know the operator has started typing, so it can ask before
+   * replacing their work instead of remounting over it.
+   */
+  onDirty?: () => void
   onSave: (draft: EntryDraft) => void
   onCancel: () => void
 }
@@ -23,11 +29,19 @@ interface EntryEditorProps {
  * Shared by the Knowledge tab (edit/new) and the Inbox gap composer, so writing
  * an answer feels identical wherever the operator starts from.
  */
-export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onSave, onCancel }: EntryEditorProps) {
+export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onDirty, onSave, onCancel }: EntryEditorProps) {
   const [title, setTitle] = useState(initial.title)
   const [category, setCategory] = useState<KnowledgeCategory>(initial.category)
   const [body, setBody] = useState(initial.body)
+  const dirtyRef = useRef(false)
   const fieldId = useId()
+
+  /** Announce the first edit only, so the caller can stop overwriting. */
+  function markDirty() {
+    if (dirtyRef.current) return
+    dirtyRef.current = true
+    onDirty?.()
+  }
 
   const titleId = `${fieldId}-title`
   const categoryId = `${fieldId}-category`
@@ -60,7 +74,10 @@ export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onSave, onC
             id={titleId}
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              markDirty()
+              setTitle(e.target.value)
+            }}
             placeholder="e.g. Birthday treats in the classroom"
             className={`${controlClass} ${singleLine}`}
             autoComplete="off"
@@ -74,7 +91,10 @@ export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onSave, onC
           <select
             id={categoryId}
             value={category}
-            onChange={(e) => setCategory(e.target.value as KnowledgeCategory)}
+            onChange={(e) => {
+              markDirty()
+              setCategory(e.target.value as KnowledgeCategory)
+            }}
             className={`${controlClass} ${singleLine} sm:w-44`}
           >
             {CATEGORIES.map((value) => (
@@ -95,7 +115,10 @@ export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onSave, onC
         <textarea
           id={bodyId}
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => {
+            markDirty()
+            setBody(e.target.value)
+          }}
           rows={8}
           placeholder={bodyPlaceholder ?? "Write it the way you'd explain it to a parent."}
           className={`${controlClass} min-h-48 flex-1 resize-y leading-relaxed sm:py-2`}
@@ -120,7 +143,6 @@ export function EntryEditor({ initial, submitLabel, bodyPlaceholder, onSave, onC
         >
           Cancel
         </button>
-        {!canSave ? <span className="text-[12px] text-ink-muted">Add a title and an answer to save.</span> : null}
       </div>
     </form>
   )

@@ -1,20 +1,20 @@
-import type { KnowledgeEntry, QuestionLogItem } from "./types";
+import type { KnowledgeEntry, QuestionLogItem } from './types'
 
 export const CENTER = {
-  name: "Sunny Sprouts Learning Center",
-  shortName: "Sunny Sprouts",
-  director: "Ms. Rivera",
-  phone: "(512) 555-0134",
-  address: "1420 Meadowlark Ln, Austin, TX",
-};
+  name: 'Sunny Sprouts Learning Center',
+  shortName: 'Sunny Sprouts',
+  director: 'Ms. Rivera',
+  phone: '(512) 555-0134',
+  address: '1420 Meadowlark Ln, Austin, TX',
+}
 
-const STAMP = "2026-08-10T09:00:00.000Z";
+const STAMP = '2026-08-10T09:00:00.000Z'
 
 export const SEED_KNOWLEDGE: KnowledgeEntry[] = [
   {
-    id: "hours",
-    title: "Hours & Daily Schedule",
-    category: "hours",
+    id: 'hours',
+    title: 'Hours & Daily Schedule',
+    category: 'hours',
     updatedAt: STAMP,
     body: `We are open Monday through Friday, 7:00 AM to 6:00 PM. We are closed on weekends.
 
@@ -24,9 +24,9 @@ Standard pickup is between 4:00 and 6:00 PM.
 Daily rhythm: 7:00 arrival & free play, 9:00 circle time, 9:30 learning centers, 11:15 outdoor play, 12:00 lunch, 1:00–3:00 nap/quiet time, 3:15 snack, 3:45 outdoor play, 4:00–6:00 pickup.`,
   },
   {
-    id: "calendar",
-    title: "Holiday Calendar & Closures",
-    category: "hours",
+    id: 'calendar',
+    title: 'Holiday Calendar & Closures',
+    category: 'hours',
     updatedAt: STAMP,
     body: `Sunny Sprouts is CLOSED on these days for the 2026–2027 school year:
 
@@ -44,9 +44,9 @@ Tuition is not reduced for holiday closures; these days are built into the annua
 We remain OPEN on Columbus Day, Presidents' Day, and Halloween.`,
   },
   {
-    id: "tuition",
-    title: "Tuition & Fees",
-    category: "tuition",
+    id: 'tuition',
+    title: 'Tuition & Fees',
+    category: 'tuition',
     updatedAt: STAMP,
     body: `Weekly tuition, billed every Monday:
 
@@ -65,9 +65,9 @@ Other fees:
 Payment is due Monday by 6:00 PM through the brightwheel app. A $25 late fee applies after Wednesday.`,
   },
   {
-    id: "illness",
-    title: "Illness & Fever Policy",
-    category: "health",
+    id: 'illness',
+    title: 'Illness & Fever Policy',
+    category: 'health',
     updatedAt: STAMP,
     body: `Children must stay home if they have any of the following:
 
@@ -87,9 +87,9 @@ If a child develops a fever during the day, we will call you and ask that they b
 We cannot make medical judgments about whether a specific child is well enough to attend. When in doubt, call your pediatrician.`,
   },
   {
-    id: "medication",
-    title: "Medication Administration",
-    category: "health",
+    id: 'medication',
+    title: 'Medication Administration',
+    category: 'health',
     updatedAt: STAMP,
     body: `We can administer medication only with a signed Medication Authorization Form on file.
 
@@ -102,9 +102,9 @@ Requirements:
 Emergency medication (EpiPen, inhaler, Diastat) requires an individual Health Care Plan completed with Ms. Rivera before the child's first day.`,
   },
   {
-    id: "lunch",
-    title: "Meals & Lunch Program",
-    category: "food",
+    id: 'lunch',
+    title: 'Meals & Lunch Program',
+    category: 'food',
     updatedAt: STAMP,
     body: `Sunny Sprouts provides a hot lunch plus a morning and afternoon snack, included in tuition. Families do NOT need to pack lunch.
 
@@ -124,9 +124,9 @@ We are a NUT-FREE center. Please do not send any food containing peanuts or tree
 Allergies and dietary restrictions are accommodated with a completed Food Allergy Form. Infants follow a parent-provided feeding plan; we supply formula only if it matches the family's brand.`,
   },
   {
-    id: "tours",
-    title: "Tours, Waitlist & Enrollment",
-    category: "enrollment",
+    id: 'tours',
+    title: 'Tours, Waitlist & Enrollment',
+    category: 'enrollment',
     updatedAt: STAMP,
     body: `Tours are offered Tuesday and Thursday at 9:30 AM and 2:00 PM, and last about 30 minutes. Ms. Rivera leads every tour personally.
 
@@ -141,9 +141,9 @@ Enrollment steps:
 Current waitlist as of August 2026: Infant room approximately 3 months, Toddler room approximately 6 weeks, Preschool and Pre-K have immediate openings.`,
   },
   {
-    id: "late-pickup",
-    title: "Late Pickup Policy",
-    category: "policies",
+    id: 'late-pickup',
+    title: 'Late Pickup Policy',
+    category: 'policies',
     updatedAt: STAMP,
     body: `Pickup closes at 6:00 PM. A late fee of $1 per minute per child begins at 6:01 PM and is billed to your account.
 
@@ -154,9 +154,9 @@ Anyone picking up must be listed on your child's Authorized Pickup list and must
 After three late pickups in a rolling month, Ms. Rivera will schedule a conversation about scheduling options.`,
   },
   {
-    id: "what-to-bring",
-    title: "What to Bring Each Day",
-    category: "policies",
+    id: 'what-to-bring',
+    title: 'What to Bring Each Day',
+    category: 'policies',
     updatedAt: STAMP,
     body: `Please send each day, labeled with your child's name:
 
@@ -171,9 +171,9 @@ Please leave at home: toys from home, jewelry, anything with peanuts or tree nut
 Sunscreen is applied by staff with a signed permission form. We supply it, or you may send your own.`,
   },
   {
-    id: "contact",
-    title: "Contact & Staff",
-    category: "contact",
+    id: 'contact',
+    title: 'Contact & Staff',
+    category: 'contact',
     updatedAt: STAMP,
     body: `Sunny Sprouts Learning Center
 1420 Meadowlark Ln, Austin, TX 78704
@@ -185,7 +185,7 @@ Assistant Director: Mr. Chen handles daily schedules, classroom placement, and s
 
 The fastest way to reach a teacher during the day is a message through the brightwheel app. For anything urgent, please call. We answer the phone between 7:00 AM and 6:00 PM.`,
   },
-];
+]
 
 /**
  * Pre-seeded so the operator inbox tells a story on first load:
@@ -193,82 +193,77 @@ The fastest way to reach a teacher during the day is a message through the brigh
  */
 export const SEED_LOG: QuestionLogItem[] = [
   {
-    id: "log-1",
-    question: "Are you open on Veterans Day?",
-    answer:
-      "We're closed on Veterans Day, Wednesday, November 11, 2026. We'll be back open Thursday at 7:00 AM.",
-    status: "answered",
-    sourceId: "calendar",
-    askedAt: "2026-08-15T14:22:00.000Z",
+    id: 'log-1',
+    question: 'Are you open on Veterans Day?',
+    answer: "We're closed on Veterans Day, Wednesday, November 11, 2026. We'll be back open Thursday at 7:00 AM.",
+    status: 'answered',
+    sourceId: 'calendar',
+    askedAt: '2026-08-15T14:22:00.000Z',
   },
   {
-    id: "log-2",
-    question: "What is the tuition for infants?",
-    answer:
-      "Infant tuition (6 weeks to 17 months) is $385 per week, billed each Monday through the brightwheel app.",
-    status: "answered",
-    sourceId: "tuition",
-    askedAt: "2026-08-15T15:04:00.000Z",
+    id: 'log-2',
+    question: 'What is the tuition for infants?',
+    answer: 'Infant tuition (6 weeks to 17 months) is $385 per week, billed each Monday through the brightwheel app.',
+    status: 'answered',
+    sourceId: 'tuition',
+    askedAt: '2026-08-15T15:04:00.000Z',
   },
   {
-    id: "log-3",
-    question: "My daughter had a fever of 101 last night. Can she come in today?",
-    answer:
-      "She'll need to be fever-free for a full 24 hours without fever-reducing medication before returning.",
-    status: "answered",
-    sourceId: "illness",
-    askedAt: "2026-08-15T21:40:00.000Z",
+    id: 'log-3',
+    question: 'My daughter had a fever of 101 last night. Can she come in today?',
+    answer: "She'll need to be fever-free for a full 24 hours without fever-reducing medication before returning.",
+    status: 'answered',
+    sourceId: 'illness',
+    askedAt: '2026-08-15T21:40:00.000Z',
   },
   {
-    id: "log-4",
-    question: "I forgot to pack lunch. Can you provide lunch today and what is it?",
-    answer:
-      "Lunch is always included, so no need to pack. Today is cheese quesadilla, black beans, and orange wedges.",
-    status: "answered",
-    sourceId: "lunch",
-    askedAt: "2026-08-16T07:52:00.000Z",
+    id: 'log-4',
+    question: 'I forgot to pack lunch. Can you provide lunch today and what is it?',
+    answer: 'Lunch is always included, so no need to pack. Today is cheese quesadilla, black beans, and orange wedges.',
+    status: 'answered',
+    sourceId: 'lunch',
+    askedAt: '2026-08-16T07:52:00.000Z',
   },
   {
-    id: "log-5",
-    question: "How can I schedule a tour?",
+    id: 'log-5',
+    question: 'How can I schedule a tour?',
     answer:
-      "Tours run Tuesdays and Thursdays at 9:30 AM and 2:00 PM. Call (512) 555-0134 or request one in the brightwheel app.",
-    status: "answered",
-    sourceId: "tours",
-    askedAt: "2026-08-16T08:15:00.000Z",
+      'Tours run Tuesdays and Thursdays at 9:30 AM and 2:00 PM. Call (512) 555-0134 or request one in the brightwheel app.',
+    status: 'answered',
+    sourceId: 'tours',
+    askedAt: '2026-08-16T08:15:00.000Z',
   },
   {
-    id: "log-6",
+    id: 'log-6',
     question:
-      "Miles fell off the climber yesterday and hit his head. He seems okay but is a little sleepy. Should I keep him home?",
-    answer:
-      "Passed to Ms. Rivera. Head injury follow-up is a medical judgment the front desk should not make.",
-    status: "escalated",
+      'Miles fell off the climber yesterday and hit his head. He seems okay but is a little sleepy. Should I keep him home?',
+    answer: 'Passed to Ms. Rivera. Head injury follow-up is a medical judgment the front desk should not make.',
+    status: 'escalated',
     sourceId: null,
-    askedAt: "2026-08-16T06:30:00.000Z",
+    askedAt: '2026-08-16T06:30:00.000Z',
   },
   {
-    id: "log-7",
-    question: "Do you offer any summer camp for older siblings?",
-    answer: "No knowledge entry covers summer camp for school-age siblings.",
-    status: "gap",
+    id: 'log-7',
+    question: 'Do you offer any summer camp for older siblings?',
+    answer: 'No knowledge entry covers summer camp for school-age siblings.',
+    status: 'gap',
     sourceId: null,
-    askedAt: "2026-08-15T18:11:00.000Z",
+    askedAt: '2026-08-15T18:11:00.000Z',
   },
   {
-    id: "log-8",
+    id: 'log-8',
     question: "What's your policy on birthday treats in the classroom?",
-    answer: "No knowledge entry covers classroom birthday celebrations.",
-    status: "gap",
+    answer: 'No knowledge entry covers classroom birthday celebrations.',
+    status: 'gap',
     sourceId: null,
-    askedAt: "2026-08-16T09:05:00.000Z",
+    askedAt: '2026-08-16T09:05:00.000Z',
   },
-];
+]
 
 export const SUGGESTED_QUESTIONS = [
-  "Are you open on Veterans Day?",
-  "What is the tuition for infants?",
-  "My child has a fever, can they come in?",
+  'Are you open on Veterans Day?',
+  'What is the tuition for infants?',
+  'My child has a fever, can they come in?',
   "I forgot to pack lunch. What's for lunch today?",
-  "How can I schedule a tour?",
-];
+  'How can I schedule a tour?',
+]

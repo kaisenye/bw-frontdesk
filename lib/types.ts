@@ -1,11 +1,19 @@
-export type KnowledgeCategory =
-  | "hours"
-  | "tuition"
-  | "health"
-  | "food"
-  | "enrollment"
-  | "policies"
-  | "contact";
+/**
+ * Canonical list, with the union derived from it. The drafting route runs on the
+ * server and needs these values, and the admin components are client-only, so
+ * the list lives here rather than in either.
+ */
+export const KNOWLEDGE_CATEGORIES = [
+  "hours",
+  "tuition",
+  "health",
+  "food",
+  "enrollment",
+  "policies",
+  "contact",
+] as const;
+
+export type KnowledgeCategory = (typeof KNOWLEDGE_CATEGORIES)[number];
 
 export interface KnowledgeEntry {
   id: string;
@@ -17,7 +25,12 @@ export interface KnowledgeEntry {
   updatedAt: string;
 }
 
-export type AnswerStatus = "answered" | "escalated" | "gap";
+/**
+ * "chitchat" covers thanks, greetings, and anything else that needs no handbook
+ * entry. Without it every "Thanks!" became a knowledge gap and told the operator
+ * to go write a policy about gratitude.
+ */
+export type AnswerStatus = "answered" | "escalated" | "gap" | "chitchat";
 
 export interface QuestionLogItem {
   id: string;
@@ -41,6 +54,12 @@ export interface ChatResponse {
   sourceId: string | null;
   confidence: "high" | "low";
   escalate: boolean;
+  /**
+   * False when the message is not really a question about the center (thanks,
+   * greetings, small talk). Such a message has no citation, but it is not a
+   * knowledge gap and must never land in the operator's queue.
+   */
+  needsKnowledge?: boolean;
   escalationReason?: string;
   /**
    * Who the question is being handed to. The card used to always name the
@@ -49,6 +68,30 @@ export interface ChatResponse {
    */
   routedTo?: string;
 }
+
+/**
+ * A proposed knowledge entry, written from the center's existing entries so the
+ * operator edits instead of starting from a blank box. The operator is always
+ * the author: this is a first pass they correct and own.
+ */
+export interface DraftResponse {
+  ok: true;
+  /** Empty means the client keeps its own suggestTitle heuristic. */
+  title: string;
+  category: KnowledgeCategory;
+  body: string;
+  /** How well the existing entries supported the draft, not how true it is. */
+  confidence: "high" | "low";
+  /** Things the operator must confirm before saving. Drives the checklist. */
+  assumptions: string[];
+}
+
+export interface DraftFailure {
+  ok: false;
+  reason: string;
+}
+
+export type DraftResult = DraftResponse | DraftFailure;
 
 export interface ChatMessage {
   id: string;
